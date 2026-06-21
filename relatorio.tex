@@ -1,0 +1,358 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Laboratório 2 - Unidade Operativa Uniciclo RISC-V32I\\}
+
+\author{\IEEEauthorblockN{1\textsuperscript{st} Artur Henrique do Carmo Rosa}
+\IEEEauthorblockA{\textit{Departamento de Ciências da Computação} \\
+\textit{Universidade de Brasília}\\
+Brasília, Brazil \\
+222028738@aluno.unb.br}
+\and
+\IEEEauthorblockN{2\textsuperscript{nd} Daniel Dezan Baby}
+\IEEEauthorblockA{\textit{Departamento de Ciências da Computação} \\
+\textit{Universidade de Brasília}\\
+Brasília, Brazil \\
+232046097@aluno.unb.br}
+\and
+\IEEEauthorblockN{3\textsuperscript{rd} João Filipe Araújo}
+\IEEEauthorblockA{\textit{Departamento de Ciências da Computação} \\
+\textit{Universidade de Brasília}\\
+Brasília, Brazil \\
+231013574@aluno.unb.br}
+\and
+\IEEEauthorblockN{4\textsuperscript{th} Leonardo Tomé Sampaio}
+\IEEEauthorblockA{\textit{Departamento de Ciências da Computação} \\
+\textit{Universidade de Brasília}\\
+Brasília, Brazil \\
+222005448@aluno.unb.br}
+\and
+\IEEEauthorblockN{5\textsuperscript{th} Luís Eduardo Curi Serra}
+\IEEEauthorblockA{\textit{Departamento de Ciências da Computação} \\
+\textit{Universidade de Brasília}\\
+Brasília, Brazil \\
+251033574@aluno.unb.br}
+}
+
+\maketitle
+
+\begin{abstract}
+% TODO (grupo): completar o abstract com a visão geral de todo o trabalho ao final, quando todos os módulos estiverem prontos.
+No presente trabalho é apresentado o desenvolvimento da Unidade Operativa Uniciclo da arquitetura
+RISC-V32I, implementada no ambiente Quartus II. O projeto contempla os módulos que compõem o caminho de
+dados (\textit{datapath}), as memórias de instrução e de dados em organização Harvard, a unidade de
+controle principal e a unidade de controle da ULA, de forma a executar automaticamente um conjunto de
+instruções de 32 bits pré-compiladas no formato MIF. O trabalho inclui a descrição da arquitetura
+desenvolvida, do conjunto de instruções suportado, dos procedimentos e métodos adotados, dos resultados
+obtidos por meio do ambiente de simulação Waveform Editor e da análise de desempenho das unidades
+funcionais, seguidos de uma análise crítica dos resultados.
+\end{abstract}
+
+\begin{IEEEkeywords}
+RISC-V, Uniciclo, FPGA, Quartus, caminho de dados, unidade de controle, multiplexador
+\end{IEEEkeywords}
+
+%-----------------------------------------------------------------------
+
+\section{Divisão de tarefas}
+
+\subsection{Objetivos e Introdução (Teoria da Arquitetura)}
+Seção ii. Objetivos: resumo sucinto dos objetivos do laboratório.
+Seção iii. Introdução (parte 1): visão geral da arquitetura RISC-V32I, filosofia RISC, organização
+Uniciclo e caminho de dados.
+
+\subsection{Introdução (Caminho de Dados e Memórias)}
+Seção iii. Introdução (parte 2): detalhamento dos módulos do caminho de dados, memórias de instrução e
+dados em organização Harvard, banco de registradores, somador, gerador de imediato e ULA.
+
+\subsection{Introdução (Unidade de Controle e Multiplexadores)}
+Seção iii. Introdução (parte 3): unidade de controle principal, unidade de controle da ULA, sinais de
+controle e multiplexadores do caminho de dados.
+
+\subsection{Procedimentos e Métodos}
+Seção iv. Materiais e Métodos: ferramentas utilizadas (Quartus II, Waveform Editor), descrição da
+implementação de cada módulo e metodologia de sincronização e integração.
+
+\subsection{Resultados experimentais}
+Seção v. Resultados: simulações no Waveform Editor, conteúdo dos registradores, sinais de controle e
+análise de desempenho de cada unidade funcional.
+
+\subsection{Análise de resultados, Conclusões e Revisão Geral}
+Seção vi. Discussão e Conclusões: análise qualitativa e quantitativa, gargalos identificados, pontos
+críticos e conclusão geral do laboratório.
+
+%-----------------------------------------------------------------------
+
+\section{Objetivos}
+O objetivo deste laboratório foi desenvolver a Unidade Operativa Uniciclo da arquitetura RISC-V32I,
+utilizando o ambiente Quartus II Altera, de forma a montar os módulos principais do caminho de dados
+(\textit{datapath}) capazes de processar instruções de 32 bits pré-compiladas no formato MIF, fazendo uso
+de memórias de instrução e de dados em organização Harvard. Além disso, o trabalho buscou reforçar os
+conceitos estudados na disciplina de Organização e Arquitetura de Computadores, proporcionando uma
+compreensão mais prática sobre o funcionamento do caminho de dados, da unidade de controle e da análise de
+desempenho de um processador Uniciclo.
+
+\section{Introdução}
+
+\subsection{Arquitetura RISC-V32I Uniciclo}
+% TODO
+
+\subsection{Contador de Programa e Memória de Instruções}
+% TODO
+
+\subsection{Banco de Registradores}
+% TODO
+
+\subsection{Unidade Lógica e Aritmética (ULA) e seu Controle}
+% TODO
+
+\subsection{Somador}
+% TODO
+
+\subsection{Gerador de Imediato}
+% TODO
+
+\subsection{Memória de Dados}
+% TODO
+
+\subsection{Unidade de Controle Principal}
+A Unidade de Controle Uniciclo é o bloco responsável por observar o campo opcode da instrução, com 7 bits
+de largura, e decidir quais sinais devem ser ativados no restante do caminho de dados para que aquela
+instrução específica seja executada corretamente \cite{patterson2020computer}. Diferente de um registrador
+ou de uma memória, ela não guarda nenhum valor de um ciclo para o outro: assim que a memória de instruções
+entrega um novo opcode na sua entrada, a saída já reflete os novos sinais de controle, respeitando apenas
+o tempo de propagação da lógica combinacional utilizada na sua implementação.
+
+Os sinais produzidos por esse bloco, junto com o efeito de cada um sobre o caminho de dados, são os
+seguintes:
+
+\begin{itemize}
+    \item RegWrite: habilita a escrita no banco de registradores;
+    \item MemRead: habilita a leitura da memória de dados;
+    \item MemWrite: habilita a escrita na memória de dados;
+    \item MemtoReg: seleciona, por meio de um multiplexador, se o valor gravado no registrador de destino
+    vem do resultado da ULA ou do dado lido da memória;
+    \item ALUSrc: seleciona, também por meio de um multiplexador, se a segunda entrada da ULA é o conteúdo
+    do segundo registrador lido ou o valor imediato gerado pelo gerador de imediato;
+    \item Branch: indica que a instrução é um desvio condicional, sinal que é combinado com a saída Zero
+    da ULA para decidir o próximo valor do contador de programa;
+    \item ALUOp: indica de forma resumida o tipo de operação que a ULA deve realizar, sendo depois
+    combinado com os campos funct3 e funct7 pela unidade de controle da ULA para definir a operação final.
+\end{itemize}
+
+A Tabela \ref{tab:controle} apresenta a tabela verdade da unidade de controle, relacionando cada grupo de
+instruções, identificado por seu opcode, aos valores dos sinais de controle gerados
+\cite{patterson2020computer}. O valor X (don't care) indica situações em que o sinal não influencia o
+resultado da instrução, pois seu efeito não é utilizado naquele caso. O campo ALUOp utiliza 2 bits para
+identificar a categoria da operação a ser realizada pela ULA: 00 para acessos à memória, 01 para desvios e
+10 para operações lógico-aritméticas, sendo o detalhamento da operação final feito pela unidade de
+controle da ULA a partir dos campos funct3 e funct7.
+
+\begin{table}[!t]
+\caption{Tabela verdade da Unidade de Controle}
+\begin{center}
+\begin{tabular}{c|c|c|c|c|c|c|c|c}
+\hline \hline
+\textbf{Instr.} & \textbf{Opcode} & \textbf{ALUSrc} & \textbf{Mem2Reg} & \textbf{RegWrite} & \textbf{MemRead} & \textbf{MemWrite} & \textbf{Branch} & \textbf{ALUOp} \\
+\hline
+Tipo-R & 0110011 & 0 & 0 & 1 & 0 & 0 & 0 & 10 \\
+lw & 0000011 & 1 & 1 & 1 & 1 & 0 & 0 & 00 \\
+sw & 0100011 & 1 & X & 0 & 0 & 1 & 0 & 00 \\
+beq & 1100011 & 0 & X & 0 & 0 & 0 & 1 & 01 \\
+\hline \hline
+\end{tabular}
+\end{center}
+\label{tab:controle}
+\end{table}
+
+Esses quatro grupos representam o modelo de referência apresentado em sala \cite{patterson2020computer}. A
+mesma estrutura combinacional foi utilizada para reconhecer também os demais opcodes do conjunto de
+instruções adotado no projeto, atribuindo a cada um deles a combinação adequada de sinais conforme o
+formato correspondente.
+
+\subsection{Multiplexador 2:1}
+O multiplexador 2 para 1 é o elemento combinacional mais simples utilizado no caminho de dados: ele recebe
+duas entradas de dados e, dependendo do valor de um único bit de seleção, decide qual delas aparece na
+saída \cite{patterson2020computer}. A Tabela \ref{tab:mux} resume seu comportamento.
+
+\begin{table}[!t]
+\caption{Tabela verdade do Multiplexador 2:1}
+\begin{center}
+\begin{tabular}{c|c}
+\hline \hline
+\textbf{Seleção} & \textbf{Saída} \\
+\hline
+0 & Entrada 0 \\
+1 & Entrada 1 \\
+\hline \hline
+\end{tabular}
+\end{center}
+\label{tab:mux}
+\end{table}
+
+Em vez de montar um circuito seletor diferente para cada ponto do caminho de dados onde havia essa
+necessidade, optou-se por um único módulo genérico e parametrizável quanto à largura do barramento, depois
+instanciado nos três pontos do caminho de dados Uniciclo em que existe seleção entre duas fontes de dados.
+O primeiro deles escolhe entre o dado lido do segundo registrador e o valor imediato, de acordo com o
+sinal ALUSrc. O segundo escolhe entre o resultado da ULA e o dado lido da memória, de acordo com o sinal
+MemtoReg, definindo o que será escrito de volta no banco de registradores. O terceiro escolhe entre o
+valor seguinte do contador de programa e o endereço de desvio calculado, de acordo com a combinação dos
+sinais Branch e Zero.
+
+\section{Procedimentos e Métodos}
+
+\subsection{Ferramentas Utilizadas}
+% TODO
+
+\subsection{Contador de Programa e Memória de Instruções}
+% TODO
+
+\subsection{Banco de Registradores}
+% TODO
+
+\subsection{Unidade Lógica e Aritmética e seu Controle}
+% TODO
+
+\subsection{Somador}
+% TODO
+
+\subsection{Gerador de Imediato}
+% TODO
+
+\subsection{Memória de Dados}
+% TODO
+
+\subsection{Unidade de Controle Principal}
+A unidade de controle principal foi descrita como um bloco de lógica combinacional, utilizando uma
+estrutura de decisão sobre o campo opcode de 7 bits extraído diretamente da instrução lida da memória.
+Para cada opcode suportado, foi definido um conjunto fixo de valores para os sinais de saída (RegWrite,
+MemRead, MemWrite, MemtoReg, ALUSrc, Branch e ALUOp), seguindo a tabela verdade apresentada na
+introdução. Para opcodes não previstos, todos os sinais de habilitação foram mantidos desligados por
+padrão, evitando que uma instrução inválida cause algum efeito indesejado no restante do caminho de dados.
+
+A validação desse módulo foi feita de forma isolada no Waveform Editor do Quartus, aplicando-se cada
+opcode como entrada e conferindo, um a um, se a combinação de sinais gerada na saída correspondia
+exatamente à tabela de projeto antes da integração com o restante do caminho de dados.
+
+\subsection{Multiplexador 2:1}
+O módulo do multiplexador foi escrito de forma genérica, com a largura do barramento de dados como
+parâmetro, o que permitiu reaproveitá-lo nos três pontos de seleção do caminho de dados sem reescrever a
+lógica em cada lugar. Essa escolha reduz a duplicação de código e facilita a verificação, já que o
+comportamento do multiplexador só precisa ser validado uma vez para que a confiança se estenda a todas as
+instâncias seguintes. A validação foi feita no Waveform Editor, alternando o sinal de seleção entre 0 e 1
+para diferentes combinações de entrada e conferindo se a entrada correta era propagada para a saída em
+cada caso.
+
+\section{Resultados experimentais}
+
+\subsection{Contador de Programa e Memória de Instruções}
+% TODO
+
+\subsection{Banco de Registradores}
+% TODO
+
+\subsection{Unidade Lógica e Aritmética e seu Controle}
+% TODO
+
+\subsection{Somador}
+% TODO
+
+\subsection{Gerador de Imediato}
+% TODO
+
+\subsection{Memória de Dados}
+% TODO
+
+\subsection{Unidade de Controle Principal e Multiplexador 2:1}
+A verificação de ambos os módulos foi feita por meio de \textit{testbenches} próprios, escritos em Verilog
+e executados no simulador, que comparam automaticamente a saída obtida com o valor esperado em cada caso de
+teste e reportam o resultado.
+
+Para a unidade de controle, o \textit{testbench} aplicou, um a um, os opcodes correspondentes a todos os
+grupos de instruções suportados pelo projeto, além de um opcode inválido para verificar o comportamento
+padrão. A Tabela \ref{tab:result_controle} resume os casos testados, todos aprovados.
+
+\begin{table}[!t]
+\caption{Casos de teste da Unidade de Controle}
+\begin{center}
+\begin{tabular}{c|c|c}
+\hline \hline
+\textbf{Opcode (bin)} & \textbf{Opcode (hex)} & \textbf{Resultado} \\
+\hline
+0110011 & 33 & PASS \\
+0010011 & 13 & PASS \\
+0000011 & 03 & PASS \\
+0100011 & 23 & PASS \\
+1100011 & 63 & PASS \\
+1101111 & 6F & PASS \\
+1100111 & 67 & PASS \\
+0110111 & 37 & PASS \\
+0010111 & 17 & PASS \\
+1111111 & 7F & PASS \\
+\hline \hline
+\end{tabular}
+\end{center}
+\label{tab:result_controle}
+\end{table}
+
+Como a unidade de controle é um circuito puramente combinacional, a forma de onda gerada na simulação
+apresenta os sinais de saída constantes para cada opcode aplicado, sem transições intermediárias, o que é
+o comportamento esperado para esse tipo de lógica.
+
+Para o multiplexador, o \textit{testbench} aplicou diferentes combinações de dados de 32 bits nas duas
+entradas, variando o sinal de seleção entre 0 e 1, e conferiu se a saída reproduzia exatamente a entrada
+selecionada em cada caso. Foram usados valores representativos como AAAAAAAA, 55555555, DEADBEEF e
+CAFEBABE, e todos os casos foram aprovados, confirmando o funcionamento correto do módulo para qualquer
+dado de entrada.
+
+% TODO: inserir capturas de tela do Waveform Editor com as formas de onda da unidade de controle e do
+% multiplexador, para complementar as tabelas acima.
+
+\subsection{Análise de Desempenho das Unidades Funcionais}
+% TODO (grupo): tabela de tempos de execução por módulo, valor absoluto e percentual, identificação dos
+% gargalos e estimativa do período de clock.
+
+\section{Análise de Resultados}
+% TODO (grupo): completar com a discussão dos demais módulos e da integração completa.
+A unidade de controle principal e o multiplexador atenderam ao comportamento esperado em todos os casos de
+teste, gerando os sinais corretos para cada opcode e propagando o dado certo em função do sinal de seleção.
+A verificação automática por \textit{testbench} foi importante porque permitiu confirmar o comportamento de
+cada módulo de forma isolada, antes da integração com o restante do caminho de dados, reduzindo a chance de
+erros difíceis de localizar em uma etapa posterior.
+
+\section{Conclusão}
+% TODO (grupo): conclusão geral do laboratório, a ser escrita quando todos os módulos estiverem prontos e
+% integrados.
+A construção da unidade de controle principal e do multiplexador mostrou, na prática, como a decodificação
+do opcode pode ser isolada em um bloco puramente combinacional e como um único componente seletor genérico
+pode ser reaproveitado em vários pontos do caminho de dados. Essa organização modular deixou o projeto mais
+claro e facilitou a verificação individual de cada parte antes da integração da unidade operativa completa.
+
+\section*{Agradecimentos}
+
+
+
+\begin{thebibliography}{00}
+\bibitem{referenceGuide}
+F. Vidal,
+\textit{RISC-V Reference Guide v25}, 2025.
+
+\bibitem{patterson2020computer}
+D.~A. Patterson e J.~L. Hennessy,
+\textit{Computer Organization and Design RISC-V Edition: The Hardware Software Interface}.
+Morgan Kaufmann, 2020.
+
+\end{thebibliography}
+
+\end{document}
