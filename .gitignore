@@ -1,4 +1,3 @@
-cat <<EOT >> .gitignore
 # Pastas de compilacao do Quartus
 db/
 incremental_db/
@@ -10,4 +9,6 @@ greybox_tmp/
 # Arquivos de lock do Windows/Quartus
 *.flock
 *.lock
-EOT
+
+# Testbenches
+*_tb.v
