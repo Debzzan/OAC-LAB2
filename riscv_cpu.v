@@ -1,7 +1,27 @@
 module riscv_cpu (
     input wire clk,
-    input wire reset
+    input wire reset,
+	 
+	 
+	 // Saídas de teste (Debug) para o Quartus não apagar a nossa CPU
+    output wire [31:0] out_pc_atual,
+    output wire [31:0] out_instrucao,
+    output wire [31:0] out_resultado_alu,
+	 output wire [31:0] out_writedata, // <-- NOVO PINO PARA O DADO
+    output wire        out_mem_write  // <-- NOVO PINO PARA O CONTROLE DE ESCRITA
 );
+
+
+    // -------------------------------------------------------------------------
+    // Sinais de Debug para forçar a visualização no Waveform Editor
+    // -------------------------------------------------------------------------
+    assign out_pc_atual = pc_atual;
+    assign out_instrucao = instrucao;
+    assign out_resultado_alu = resultado_alu;
+	 assign out_writedata = lido_reg2; // <-- O dado lido do registrador que vai para a memória
+    assign out_mem_write = mem_write; // <-- O sinal que avisa a memória para gravar
+
+
 
     // -------------------------------------------------------------------------
     // Fios de interconexão (Wires internos)
@@ -53,6 +73,7 @@ module riscv_cpu (
     // 4. Memória de Instruções
     // -------------------------------------------------------------------------
     im mem_instrucoes (
+        .clk(clk),            // <-- NOVA CONEXÃO DO CLOCK AQUI!
         .addr(pc_atual),
         .inst(instrucao)
     );
@@ -109,7 +130,7 @@ module riscv_cpu (
     // 9. Controle da ULA
     // -------------------------------------------------------------------------
     alu_control controle_da_alu (
-        .alu_op(alu_op[ 1 : 0 ]),      
+        .alu_op(alu_op[ 2 : 0 ]),      
         .funct3(instrucao[ 14 : 12 ]),
         .bit30(instrucao[ 30 ]), // <-- Trinta com espaço para não sumir
         .alu_ctrl_out(controle_alu_fio)
@@ -132,7 +153,7 @@ module riscv_cpu (
     data_memory mem_dados (
         .clock(clk),
         .ALUOut(resultado_alu),
-        .RegOut({32'b0, lido_reg2}), // ATENÇÃO: Ajuste explicado nas observações
+        .WriteData(lido_reg2),   // <-- Conectando o dado de 32 bits direto aqui
         .MemWrite(mem_write),
         .MemRead(mem_read),
         .MemOut(dado_lido_mem)
@@ -159,15 +180,26 @@ module riscv_cpu (
         .out(dado_escrita_reg)
     );
 
+	 
+	 
+	 
     // -------------------------------------------------------------------------
-    // 13. Porta AND do Branch e MUX do Program Counter
+    // 13. Lógica de Desvio (Branch Control) e MUX do Program Counter
     // -------------------------------------------------------------------------
-    assign pc_src = branch & zero;
 
+    // AQUI ENTRA O NOVO MÓDULO QUE SUBSTITUI A PORTA AND:
+    BranchControl controle_de_desvio (
+        .Branch(branch),               // <-- Fio que sai da sua Control Unit (verifique se o nome é esse mesmo)
+        .Zero(zero),                   // <-- Fio 'zero' que vem ali de cima da ULA (Bloco 10)
+        .funct3(instrucao[ 14 : 12 ]), // <-- Pegando o funct3 direto do fio 'instrucao'
+        .PcSrc(pc_src)                 // <-- O resultado sai no fio 'pc_src'
+    );
+
+    // O MUX DO PC CONTINUA IGUAL:
     mux2_1 #(32) mux_pc_next (
         .in0(pc_mais_4),
         .in1(pc_branch_target),
-        .sel(pc_src),
+        .sel(pc_src),                  // <-- O MUX agora é controlado pelo BranchControl
         .out(pc_proximo)
     );
 

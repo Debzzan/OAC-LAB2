@@ -1,5 +1,5 @@
 module alu_control (
-    input wire [1:0] alu_op,       
+    input wire [2:0] alu_op,       
     input wire [2:0] funct3,       
     input wire       bit30,        
     
@@ -8,27 +8,62 @@ module alu_control (
 
     always @(*) begin
         case (alu_op)
-            2'b00: alu_ctrl_out = 4'b0010; // lw, sw -> SOMA
-            2'b01: alu_ctrl_out = 4'b0110; // beq, bne -> SUBTRAÇÃO
-            2'b10: begin
+            // ----------------------------------------------------
+            // 3'b000: lw, sw -> FORÇA SOMA
+            // ----------------------------------------------------
+            3'b000: alu_ctrl_out = 4'b0010; 
+            
+            // ----------------------------------------------------
+            // 3'b001: beq, bne -> FORÇA SUBTRAÇÃO
+            // ----------------------------------------------------
+            3'b001: alu_ctrl_out = 4'b0110; 
+            
+            // ----------------------------------------------------
+            // 3'b010: TIPO-R (add, sub, and, or...) 
+            // Usa o bit30 para diferenciar ADD de SUB
+            // ----------------------------------------------------
+            3'b010: begin
                 case (funct3)
                     3'b000: begin
                         if (bit30 == 1'b1)
-                            alu_ctrl_out = 4'b0110; // SUB
+                            alu_ctrl_out = 4'b0110; // SUB (Subtração)
                         else
-                            alu_ctrl_out = 4'b0010; // ADD (add, addi)
+                            alu_ctrl_out = 4'b0010; // ADD (Soma)
                     end
-                    3'b111: alu_ctrl_out = 4'b0000; // AND / andi
-                    3'b110: alu_ctrl_out = 4'b0001; // OR / ori
-                    3'b100: alu_ctrl_out = 4'b0011; // XOR / xori
-                    3'b010: alu_ctrl_out = 4'b0111; // SLT / slti                    
-                    3'b001: alu_ctrl_out = 4'b0100; // SLL (Deslocamento à esquerda)
-                    3'b101: alu_ctrl_out = 4'b0101; // SRL (Deslocamento à direita)
+                    3'b111: alu_ctrl_out = 4'b0000; // AND
+                    3'b110: alu_ctrl_out = 4'b0001; // OR
+                    3'b100: alu_ctrl_out = 4'b0011; // XOR
+                    3'b010: alu_ctrl_out = 4'b0111; // SLT                  
+                    3'b001: alu_ctrl_out = 4'b0100; // SLL
+                    3'b101: alu_ctrl_out = 4'b0101; // SRL
                     
                     default: alu_ctrl_out = 4'b0000;
                 endcase
             end
-            default: alu_ctrl_out = 4'b0000;
+
+            // ----------------------------------------------------
+            // 3'b011: TIPO-I (addi, andi, ori...)
+            // IGNORA o bit30 no funct3 == 000 para SEMPRE SOMAR!
+            // ----------------------------------------------------
+            3'b011: begin
+                case (funct3)
+                    3'b000: alu_ctrl_out = 4'b0010; // ADDI -> SOMA SEMPRE!
+                    
+                    3'b111: alu_ctrl_out = 4'b0000; // ANDI
+                    3'b110: alu_ctrl_out = 4'b0001; // ORI
+                    3'b100: alu_ctrl_out = 4'b0011; // XORI
+                    3'b010: alu_ctrl_out = 4'b0111; // SLTI                  
+                    3'b001: alu_ctrl_out = 4'b0100; // SLLI
+                    3'b101: alu_ctrl_out = 4'b0101; // SRLI
+                    
+                    default: alu_ctrl_out = 4'b0000;
+                endcase
+            end
+
+            // ----------------------------------------------------
+            // Default de segurança
+            // ----------------------------------------------------
+            default: alu_ctrl_out = 4'b0010; // Default para SOMA
         endcase
     end
 endmodule
