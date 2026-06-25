@@ -65,6 +65,38 @@ set_global_assignment -name VERILOG_FILE alu_control.v
 set_global_assignment -name VERILOG_FILE adder.v
 set_global_assignment -name VERILOG_FILE mux2_1.v
 set_global_assignment -name VERILOG_FILE riscv_cpu.v
+set_instance_assignment -name VIRTUAL_PIN ON -to out_zero[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_ra[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_sp[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_gp[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_tp[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_t0[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_t1[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_t2[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_s0_fp[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_s1[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_a0[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_a1[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_a2[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_a3[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_a4[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_a5[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_a6[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_a7[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_s2[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_s3[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_s4[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_s5[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_s6[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_s7[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_s8[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_s9[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_s10[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_s11[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_t3[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_t4[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_t5[*]
+set_instance_assignment -name VIRTUAL_PIN ON -to out_t6[*]
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top

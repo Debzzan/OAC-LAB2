@@ -7,7 +7,39 @@ module REGISTERS (
     input wire [4:0]  WriteReg,     // Endereço rd (5 bits)
     input wire [31:0] WriteData,    // Dado a ser gravado (32 bits)
     output wire [31:0] readData_1,  // Dado lido rs1 (32 bits - ASSÍNCRONO)
-    output wire [31:0] readData_2   // Dado lido rs2 (32 bits - ASSÍNCRONO)
+    output wire [31:0] readData_2,  // Dado lido rs2 (32 bits - ASSÍNCRONO)
+    output wire [31:0] out_zero,
+    output wire [31:0] out_ra,
+    output wire [31:0] out_sp,
+    output wire [31:0] out_gp,
+    output wire [31:0] out_tp,
+    output wire [31:0] out_t0,
+    output wire [31:0] out_t1,
+    output wire [31:0] out_t2,
+    output wire [31:0] out_s0_fp,
+    output wire [31:0] out_s1,
+    output wire [31:0] out_a0,
+    output wire [31:0] out_a1,
+    output wire [31:0] out_a2,
+    output wire [31:0] out_a3,
+    output wire [31:0] out_a4,
+    output wire [31:0] out_a5,
+    output wire [31:0] out_a6,
+    output wire [31:0] out_a7,
+    output wire [31:0] out_s2,
+    output wire [31:0] out_s3,
+    output wire [31:0] out_s4,
+    output wire [31:0] out_s5,
+    output wire [31:0] out_s6,
+    output wire [31:0] out_s7,
+    output wire [31:0] out_s8,
+    output wire [31:0] out_s9,
+    output wire [31:0] out_s10,
+    output wire [31:0] out_s11,
+    output wire [31:0] out_t3,
+    output wire [31:0] out_t4,
+    output wire [31:0] out_t5,
+    output wire [31:0] out_t6
 );
 
     // Array de 32 registradores de 32 bits
@@ -58,7 +90,7 @@ module REGISTERS (
     assign readData_2 = (ReadReg2 == 5'd0) ? 32'd0 : registradores[ReadReg2];
 
     always @(*) begin
-        debug_x0  = registradores[0];
+        debug_x0  = 32'd0;
         debug_x1  = registradores[1];
         debug_x2  = registradores[2];
         debug_x3  = registradores[3];
@@ -91,6 +123,39 @@ module REGISTERS (
         debug_x30 = registradores[30];
         debug_x31 = registradores[31];
     end
+
+    assign out_zero = debug_x0;   // x0
+    assign out_ra   = debug_x1;   // x1
+    assign out_sp   = debug_x2;   // x2
+    assign out_gp   = debug_x3;   // x3
+    assign out_tp   = debug_x4;   // x4
+    assign out_t0   = debug_x5;   // x5
+    assign out_t1   = debug_x6;   // x6
+    assign out_t2   = debug_x7;   // x7
+    assign out_s0_fp = debug_x8;  // x8
+    assign out_s1   = debug_x9;   // x9
+    assign out_a0   = debug_x10;  // x10
+    assign out_a1   = debug_x11;  // x11
+    assign out_a2   = debug_x12;  // x12
+    assign out_a3   = debug_x13;  // x13
+    assign out_a4   = debug_x14;  // x14
+    assign out_a5   = debug_x15;  // x15
+    assign out_a6   = debug_x16;  // x16
+    assign out_a7   = debug_x17;  // x17
+    assign out_s2   = debug_x18;  // x18
+    assign out_s3   = debug_x19;  // x19
+    assign out_s4   = debug_x20;  // x20
+    assign out_s5   = debug_x21;  // x21
+    assign out_s6   = debug_x22;  // x22
+    assign out_s7   = debug_x23;  // x23
+    assign out_s8   = debug_x24;  // x24
+    assign out_s9   = debug_x25;  // x25
+    assign out_s10  = debug_x26;  // x26
+    assign out_s11  = debug_x27;  // x27
+    assign out_t3   = debug_x28;  // x28
+    assign out_t4   = debug_x29;  // x29
+    assign out_t5   = debug_x30;  // x30
+    assign out_t6   = debug_x31;  // x31
 
     // -------------------------------------------------------------------------
     // ESCRITA SÍNCRONA (Sequencial)
