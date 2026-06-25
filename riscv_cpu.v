@@ -1,14 +1,49 @@
 module riscv_cpu (
-    input wire clk,
-    input wire reset,
+	input wire clk,
+	input wire reset,
 	 
 	 
 	 // Saídas de teste (Debug) para o Quartus não apagar a nossa CPU
-    output wire [31:0] out_pc_atual,
-    output wire [31:0] out_instrucao,
-    output wire [31:0] out_resultado_alu,
-	 output wire [31:0] out_writedata, // <-- NOVO PINO PARA O DADO
-    output wire        out_mem_write  // <-- NOVO PINO PARA O CONTROLE DE ESCRITA
+	output wire [31:0] out_pc_atual,
+	output wire [31:0] out_instrucao,
+	output wire [31:0] out_resultado_alu,
+	output wire [31:0] out_writedata, // <-- NOVO PINO PARA O DADO
+	output wire        out_mem_write, // <-- NOVO PINO PARA O CONTROLE DE ESCRITA
+	output wire [4:0]  out_reg_write_addr,
+	output wire [31:0] out_reg_write_data,
+	output wire        out_reg_write_en,
+	output wire [31:0] out_x0,
+	output wire [31:0] out_x1,
+	output wire [31:0] out_x2,
+	output wire [31:0] out_x3,
+	output wire [31:0] out_x4,
+	output wire [31:0] out_x5,
+	output wire [31:0] out_x6,
+	output wire [31:0] out_x7,
+	output wire [31:0] out_x8,
+	output wire [31:0] out_x9,
+	output wire [31:0] out_x10,
+	output wire [31:0] out_x11,
+	output wire [31:0] out_x12,
+	output wire [31:0] out_x13,
+	output wire [31:0] out_x14,
+	output wire [31:0] out_x15,
+	output wire [31:0] out_x16,
+	output wire [31:0] out_x17,
+	output wire [31:0] out_x18,
+	output wire [31:0] out_x19,
+	output wire [31:0] out_x20,
+	output wire [31:0] out_x21,
+	output wire [31:0] out_x22,
+	output wire [31:0] out_x23,
+	output wire [31:0] out_x24,
+	output wire [31:0] out_x25,
+	output wire [31:0] out_x26,
+	output wire [31:0] out_x27,
+	output wire [31:0] out_x28,
+	output wire [31:0] out_x29,
+	output wire [31:0] out_x30,
+	output wire [31:0] out_x31
 );
 
     // -------------------------------------------------------------------------
@@ -42,9 +77,12 @@ module riscv_cpu (
     // -------------------------------------------------------------------------
     assign out_pc_atual = pc_atual;
     assign out_instrucao = instrucao;
-    assign out_resultado_alu = resultado_alu;
-	 assign out_writedata = lido_reg2; // <-- O dado lido do registrador que vai para a memória
-    assign out_mem_write = mem_write; // <-- O sinal que avisa a memória para gravar
+	assign out_resultado_alu = resultado_alu;
+	assign out_writedata = lido_reg2; // <-- O dado lido do registrador que vai para a memória
+	assign out_mem_write = mem_write; // <-- O sinal que avisa a memória para gravar
+	assign out_reg_write_addr = instrucao[11:7];
+	assign out_reg_write_data = dado_escrita_reg;
+	assign out_reg_write_en = reg_write;
 
     // -------------------------------------------------------------------------
     // 1. Program Counter (PC)
@@ -109,12 +147,44 @@ module riscv_cpu (
         .reset(reset),
         .RegWrite(reg_write),
         .ReadReg1(instrucao[19:15]),
-        .ReadReg2(instrucao[24:20]),
-        .WriteReg(instrucao[11:7]),
-        .WriteData(dado_escrita_reg),
-        .readData_1(lido_reg1),
-        .readData_2(lido_reg2)
-    );
+	    .ReadReg2(instrucao[24:20]),
+	    .WriteReg(instrucao[11:7]),
+	    .WriteData(dado_escrita_reg),
+	    .readData_1(lido_reg1),
+	    .readData_2(lido_reg2),
+	    .out_x0(out_x0),
+	    .out_x1(out_x1),
+	    .out_x2(out_x2),
+	    .out_x3(out_x3),
+	    .out_x4(out_x4),
+	    .out_x5(out_x5),
+	    .out_x6(out_x6),
+	    .out_x7(out_x7),
+	    .out_x8(out_x8),
+	    .out_x9(out_x9),
+	    .out_x10(out_x10),
+	    .out_x11(out_x11),
+	    .out_x12(out_x12),
+	    .out_x13(out_x13),
+	    .out_x14(out_x14),
+	    .out_x15(out_x15),
+	    .out_x16(out_x16),
+	    .out_x17(out_x17),
+	    .out_x18(out_x18),
+	    .out_x19(out_x19),
+	    .out_x20(out_x20),
+	    .out_x21(out_x21),
+	    .out_x22(out_x22),
+	    .out_x23(out_x23),
+	    .out_x24(out_x24),
+	    .out_x25(out_x25),
+	    .out_x26(out_x26),
+	    .out_x27(out_x27),
+	    .out_x28(out_x28),
+	    .out_x29(out_x29),
+	    .out_x30(out_x30),
+	    .out_x31(out_x31)
+	);
 
     // -------------------------------------------------------------------------
     // 7. Gerador de Imediatos
