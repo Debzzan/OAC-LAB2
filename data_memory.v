@@ -3,23 +3,21 @@ module data_memory (
     input wire [31:0] ALUOut,       
     input wire [31:0] WriteData,    
     input wire        MemWrite,     
-    input wire        MemRead,      // Mantemos a porta declarada para não quebrar os fios do Top-Level
-    output reg [31:0] MemOut        
+    input wire        MemRead,      
+    output reg [31:0] MemOut       // <-- VOLTOU PARA REG
 );
 
-    // Vetor com as 32768 posições exigidas!
     (* ram_init_file = "UnicicloData.mif" *) reg [31:0] mem [0:32767];
 
-    // Leitura SÍNCRONA CONTÍNUA na borda de DESCIDA (sem if/else)
-    // Isso garante 100% de inferência dos blocos de RAM do Quartus
+    // LEITURA NA BORDA DE DESCIDA (meio do ciclo)
     always @(negedge clock) begin
-        MemOut <= mem[ALUOut[16:2]];
+        MemOut <= mem[ALUOut[14:2]];
     end
 
-    // Escrita SÍNCRONA na borda de SUBIDA (padrão)
+    // ESCRITA NA BORDA DE SUBIDA (início/fim do ciclo)
     always @(posedge clock) begin
         if (MemWrite)
-            mem[ALUOut[16:2]] <= WriteData;
+            mem[ALUOut[14:2]] <= WriteData;
     end
 
 endmodule

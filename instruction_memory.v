@@ -1,21 +1,13 @@
-// Memória de instruções 
 module im (
-	input wire clk,
-	input wire [ 31 : 0 ] addr,  // Endereço da próxima instrução (vindo do pc)
-	output reg [ 31 : 0 ] inst   // Instrução atual carregada pelo endereço
+    input wire clk,          // <-- O CLOCK VOLTOU PARA USAR OS BLOCOS M10K
+    input wire [31:0] addr, 
+    output reg [31:0] inst   // <-- VOLTOU PARA REG
 );
 
-    // DEPTH = 32768 palavras ( .mif gerado no Lab 1).
-    // 32768 = 2^15  ->  usa 15 bits.
-    parameter DEPTH = 32768;
+    (* ram_init_file = "UnicicloInst.mif" *) reg [31:0] mem [0:32767];
 
-    // Inicializacao da memoria 
-    (* ram_init_file = "UnicicloInst.mif" *) reg [ 31 : 0 ] inst_mem [ 0 : DEPTH-1 ];
-
-	 
-    always @(negedge clk) begin
-        // CORREÇÃO: Usando <= para bloco síncrono e extraindo exatos 15 bits (16 até 2)
-        inst <= inst_mem[addr[ 16 : 2 ]];
+    always @(posedge clk) begin
+        inst <= mem[addr[15:2]]; // Lê exatamente na virada do clock
     end
 
 endmodule

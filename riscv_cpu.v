@@ -40,6 +40,18 @@ module riscv_cpu (
     wire [2:0] alu_op;     
     wire zero;
     wire pc_src;
+	 
+	     // -------------------------------------------------------------------------
+    // Registrador para alinhar o PC com o atraso da Memória de Instruções
+    // -------------------------------------------------------------------------
+    reg [31:0] pc_execucao;
+    
+    always @(posedge clk or posedge reset) begin
+        if (reset)
+            pc_execucao <= 32'h00400000;
+        else
+            pc_execucao <= pc_atual;
+    end
 
     // -------------------------------------------------------------------------
     // 1. Program Counter (PC)
@@ -55,29 +67,29 @@ module riscv_cpu (
     // 2. Somador PC + 4
     // -------------------------------------------------------------------------
     ADDER somador_pc4 (
-        .A(pc_atual),
+        .A(pc_atual),        // Volta a ser pc_atual
         .B(32'd4),
         .Y(pc_mais_4)
     );
+
 
     // -------------------------------------------------------------------------
     // 3. Somador de Branch/Jump (PC + Imediato)
     // -------------------------------------------------------------------------
     ADDER somador_branch (
-        .A(pc_atual),
+        .A(pc_atual),        // Volta a ser pc_atual
         .B(imediato),
-        .Y(pc_branch_target)
+        .Y(pc_branch_target) // Garantindo que a saída seja esse fio!
     );
 
     // -------------------------------------------------------------------------
     // 4. Memória de Instruções
     // -------------------------------------------------------------------------
     im mem_instrucoes (
-        .clk(clk),            // <-- NOVA CONEXÃO DO CLOCK AQUI!
-        .addr(pc_atual),
+        .clk(clk),            // <-- RECONECTE O CLOCK
+        .addr(pc_proximo),    // <-- A JOGADA DE MESTRE: USE O PC_PROXIMO!
         .inst(instrucao)
     );
-
     // -------------------------------------------------------------------------
     // 5. Unidade de Controle Principal
     // -------------------------------------------------------------------------
