@@ -22,41 +22,9 @@ module riscv_cpu (
     wire [31:0] instrucao;
     wire [31:0] lido_reg1, lido_reg2, dado_escrita_reg;
     wire [31:0] imediato;
-	wire [31:0] operando_a_alu, operando_b_alu, resultado_alu;
-	wire [31:0] dado_lido_mem;
-	wire [3:0]  controle_alu_fio;
-	(* keep *) wire [31:0] debug_x0;
-	(* keep *) wire [31:0] debug_x1;
-	(* keep *) wire [31:0] debug_x2;
-	(* keep *) wire [31:0] debug_x3;
-	(* keep *) wire [31:0] debug_x4;
-	(* keep *) wire [31:0] debug_x5;
-	(* keep *) wire [31:0] debug_x6;
-	(* keep *) wire [31:0] debug_x7;
-	(* keep *) wire [31:0] debug_x8;
-	(* keep *) wire [31:0] debug_x9;
-	(* keep *) wire [31:0] debug_x10;
-	(* keep *) wire [31:0] debug_x11;
-	(* keep *) wire [31:0] debug_x12;
-	(* keep *) wire [31:0] debug_x13;
-	(* keep *) wire [31:0] debug_x14;
-	(* keep *) wire [31:0] debug_x15;
-	(* keep *) wire [31:0] debug_x16;
-	(* keep *) wire [31:0] debug_x17;
-	(* keep *) wire [31:0] debug_x18;
-	(* keep *) wire [31:0] debug_x19;
-	(* keep *) wire [31:0] debug_x20;
-	(* keep *) wire [31:0] debug_x21;
-	(* keep *) wire [31:0] debug_x22;
-	(* keep *) wire [31:0] debug_x23;
-	(* keep *) wire [31:0] debug_x24;
-	(* keep *) wire [31:0] debug_x25;
-	(* keep *) wire [31:0] debug_x26;
-	(* keep *) wire [31:0] debug_x27;
-	(* keep *) wire [31:0] debug_x28;
-	(* keep *) wire [31:0] debug_x29;
-	(* keep *) wire [31:0] debug_x30;
-	(* keep *) wire [31:0] debug_x31;
+    wire [31:0] operando_a_alu, operando_b_alu, resultado_alu;
+    wire [31:0] dado_lido_mem;
+    wire [3:0]  controle_alu_fio;
     
     // Fios de Controle gerados pela control_unit
     wire branch, alu_src;
@@ -151,39 +119,7 @@ module riscv_cpu (
 	    .WriteReg(instrucao[11:7]),
 	    .WriteData(dado_escrita_reg),
 	    .readData_1(lido_reg1),
-	    .readData_2(lido_reg2),
-	    .out_x0(debug_x0),
-	    .out_x1(debug_x1),
-	    .out_x2(debug_x2),
-	    .out_x3(debug_x3),
-	    .out_x4(debug_x4),
-	    .out_x5(debug_x5),
-	    .out_x6(debug_x6),
-	    .out_x7(debug_x7),
-	    .out_x8(debug_x8),
-	    .out_x9(debug_x9),
-	    .out_x10(debug_x10),
-	    .out_x11(debug_x11),
-	    .out_x12(debug_x12),
-	    .out_x13(debug_x13),
-	    .out_x14(debug_x14),
-	    .out_x15(debug_x15),
-	    .out_x16(debug_x16),
-	    .out_x17(debug_x17),
-	    .out_x18(debug_x18),
-	    .out_x19(debug_x19),
-	    .out_x20(debug_x20),
-	    .out_x21(debug_x21),
-	    .out_x22(debug_x22),
-	    .out_x23(debug_x23),
-	    .out_x24(debug_x24),
-	    .out_x25(debug_x25),
-	    .out_x26(debug_x26),
-	    .out_x27(debug_x27),
-	    .out_x28(debug_x28),
-	    .out_x29(debug_x29),
-	    .out_x30(debug_x30),
-	    .out_x31(debug_x31)
+	    .readData_2(lido_reg2)
 	);
 
     // -------------------------------------------------------------------------
