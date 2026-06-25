@@ -11,6 +11,32 @@ module riscv_cpu (
     output wire        out_mem_write  // <-- NOVO PINO PARA O CONTROLE DE ESCRITA
 );
 
+    // -------------------------------------------------------------------------
+    // Fios de interconexão (Wires internos)
+    // -------------------------------------------------------------------------
+    wire [31:0] pc_atual, pc_proximo, pc_destino, pc_mais_4, pc_branch_target;
+    wire [31:0] pc_branch_ou_seq, pc_jalr_target;
+    wire [31:0] instrucao;
+    wire [31:0] lido_reg1, lido_reg2, dado_escrita_reg;
+    wire [31:0] imediato;
+    wire [31:0] operando_a_alu, operando_b_alu, resultado_alu;
+    wire [31:0] dado_lido_mem;
+    wire [3:0]  controle_alu_fio;
+    
+    // Fios de Controle gerados pela control_unit
+    wire branch, alu_src;
+    wire mem_read_ctrl, mem_write_ctrl, reg_write_ctrl;
+    wire mem_read, mem_write, reg_write;
+    wire [1:0] mem_to_reg; // Declarado com 2 bits baseado nos seus comentários
+    wire [2:0] alu_op;     
+    wire zero;
+    wire pc_src;
+    wire jump, jump_r, pc_to_alu;
+    reg  started;
+
+    assign mem_read  = started & mem_read_ctrl;
+    assign mem_write = started & mem_write_ctrl;
+    assign reg_write = started & reg_write_ctrl;
 
     // -------------------------------------------------------------------------
     // Sinais de Debug para forçar a visualização no Waveform Editor
@@ -21,38 +47,6 @@ module riscv_cpu (
 	 assign out_writedata = lido_reg2; // <-- O dado lido do registrador que vai para a memória
     assign out_mem_write = mem_write; // <-- O sinal que avisa a memória para gravar
 
-
-
-    // -------------------------------------------------------------------------
-    // Fios de interconexão (Wires internos)
-    // -------------------------------------------------------------------------
-    wire [31:0] pc_atual, pc_proximo, pc_mais_4, pc_branch_target;
-    wire [31:0] instrucao;
-    wire [31:0] lido_reg1, lido_reg2, dado_escrita_reg;
-    wire [31:0] imediato;
-    wire [31:0] operando_b_alu, resultado_alu;
-    wire [31:0] dado_lido_mem;
-    wire [3:0]  controle_alu_fio;
-    
-    // Fios de Controle gerados pela control_unit
-    wire branch, mem_read, mem_write, alu_src, reg_write;
-    wire [1:0] mem_to_reg; // Declarado com 2 bits baseado nos seus comentários
-    wire [2:0] alu_op;     
-    wire zero;
-    wire pc_src;
-	 
-	     // -------------------------------------------------------------------------
-    // Registrador para alinhar o PC com o atraso da Memória de Instruções
-    // -------------------------------------------------------------------------
-    reg [31:0] pc_execucao;
-    
-    always @(posedge clk or posedge reset) begin
-        if (reset)
-            pc_execucao <= 32'h00400000;
-        else
-            pc_execucao <= pc_atual;
-    end
-
     // -------------------------------------------------------------------------
     // 1. Program Counter (PC)
     // -------------------------------------------------------------------------
@@ -62,6 +56,13 @@ module riscv_cpu (
         .next_addr(pc_proximo),
         .current_addr(pc_atual)
     );
+
+    always @(posedge clk or posedge reset) begin
+        if (reset)
+            started <= 1'b0;
+        else
+            started <= 1'b1;
+    end
 
     // -------------------------------------------------------------------------
     // 2. Somador PC + 4
@@ -97,12 +98,15 @@ module riscv_cpu (
         .opcode(instrucao[6:0]),
         // Saídas
         .Branch(branch),
-        .MemRead(mem_read),
+        .MemRead(mem_read_ctrl),
         .MemtoReg(mem_to_reg),
         .ALUOp(alu_op),
-        .MemWrite(mem_write),
+        .MemWrite(mem_write_ctrl),
         .ALUSrc(alu_src),
-        .RegWrite(reg_write)
+        .RegWrite(reg_write_ctrl),
+        .Jump(jump),
+        .JumpR(jump_r),
+        .PCtoALU(pc_to_alu)
     );
 
     // -------------------------------------------------------------------------
@@ -138,6 +142,14 @@ module riscv_cpu (
         .out(operando_b_alu)
     );
 
+    // AUIPC usa o PC como primeiro operando da ULA; as demais usam rs1.
+    mux2_1 #(32) mux_pc_to_alu (
+        .in0(lido_reg1),
+        .in1(pc_atual),
+        .sel(pc_to_alu),
+        .out(operando_a_alu)
+    );
+
     // -------------------------------------------------------------------------
     // 9. Controle da ULA
     // -------------------------------------------------------------------------
@@ -152,7 +164,7 @@ module riscv_cpu (
     // 10. ULA
     // -------------------------------------------------------------------------
     alu ula_principal (
-        .readData_1(lido_reg1),
+        .readData_1(operando_a_alu),
         .readData_2(operando_b_alu),
         .alu_control(controle_alu_fio),
         .alu_result(resultado_alu),
@@ -207,12 +219,23 @@ module riscv_cpu (
         .PcSrc(pc_src)                 // <-- O resultado sai no fio 'pc_src'
     );
 
-    // O MUX DO PC CONTINUA IGUAL:
-    mux2_1 #(32) mux_pc_next (
+    // Branch e JAL usam PC + imediato. JALR usa (rs1 + imediato) com bit 0 zerado.
+    mux2_1 #(32) mux_pc_branch_jump (
         .in0(pc_mais_4),
         .in1(pc_branch_target),
-        .sel(pc_src),                  // <-- O MUX agora é controlado pelo BranchControl
-        .out(pc_proximo)
+        .sel(pc_src | jump),
+        .out(pc_branch_ou_seq)
     );
+
+    assign pc_jalr_target = {resultado_alu[31:1], 1'b0};
+
+    mux2_1 #(32) mux_pc_jalr (
+        .in0(pc_branch_ou_seq),
+        .in1(pc_jalr_target),
+        .sel(jump_r),
+        .out(pc_destino)
+    );
+
+    assign pc_proximo = started ? pc_destino : 32'h00400000;
 
 endmodule

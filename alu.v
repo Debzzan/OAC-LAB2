@@ -16,6 +16,7 @@ module alu (
             4'b0011: alu_result = readData_1 ^ readData_2; // XOR (Ou exclusivo)
             4'b0100: alu_result = readData_1 << readData_2[4:0]; // SLL
             4'b0101: alu_result = readData_1 >> readData_2[4:0]; // SRL
+            4'b1000: alu_result = readData_2; // PASSA-B (LUI)
 				
             // SLT (Set on Less Than)
             4'b0111: begin

@@ -63,6 +63,8 @@ module alu_control (
             // ----------------------------------------------------
             // Default de segurança
             // ----------------------------------------------------
+            3'b100: alu_ctrl_out = 4'b1000; // LUI -> passa o imediato (operando B)
+
             default: alu_ctrl_out = 4'b0010; // Default para SOMA
         endcase
     end
