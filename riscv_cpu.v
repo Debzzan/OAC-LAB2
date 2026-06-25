@@ -32,11 +32,10 @@ module riscv_cpu (
     wire zero;
     wire pc_src;
     wire jump, jump_r, pc_to_alu;
-    reg  started;
 
-    assign mem_read  = started & mem_read_ctrl;
-    assign mem_write = started & mem_write_ctrl;
-    assign reg_write = started & reg_write_ctrl;
+    assign mem_read  = mem_read_ctrl;
+    assign mem_write = mem_write_ctrl;
+    assign reg_write = reg_write_ctrl;
 
     // -------------------------------------------------------------------------
     // Sinais de Debug para forçar a visualização no Waveform Editor
@@ -56,13 +55,6 @@ module riscv_cpu (
         .next_addr(pc_proximo),
         .current_addr(pc_atual)
     );
-
-    always @(posedge clk or posedge reset) begin
-        if (reset)
-            started <= 1'b0;
-        else
-            started <= 1'b1;
-    end
 
     // -------------------------------------------------------------------------
     // 2. Somador PC + 4
@@ -88,7 +80,7 @@ module riscv_cpu (
     // -------------------------------------------------------------------------
     im mem_instrucoes (
         .clk(clk),            // <-- RECONECTE O CLOCK
-        .addr(pc_proximo),    // <-- A JOGADA DE MESTRE: USE O PC_PROXIMO!
+        .addr(pc_atual),
         .inst(instrucao)
     );
     // -------------------------------------------------------------------------
@@ -236,6 +228,6 @@ module riscv_cpu (
         .out(pc_destino)
     );
 
-    assign pc_proximo = started ? pc_destino : 32'h00400000;
+    assign pc_proximo = pc_destino;
 
 endmodule

@@ -7,12 +7,12 @@ module pc (
 );
 
 // Lógica sequencial
-always @(posedge clk or posedge reset) begin
-	if (reset == 1'b1) begin
-		current_addr <= 32'h00400000;  // Endereço de início do .text
-	end
-	else begin
-		current_addr <= next_addr;
+	always @(posedge clk or posedge reset) begin
+		if (reset == 1'b1) begin
+			current_addr <= 32'h00004000;  // Endereço de início do .text
+		end
+		else begin
+			current_addr <= next_addr;
 	end
 end
 
