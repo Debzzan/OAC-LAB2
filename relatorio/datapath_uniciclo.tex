@@ -144,11 +144,11 @@
 \draw[ctrl] (mw0sel) -- (16.5,-1.0);  \node[clbl] at (16.5,-1.2){M2Reg[0]};
 \draw[ctrl] (mw1sel) -- (17.9,-0.35); \node[clbl] at (17.9,-0.55){M2Reg[1]};
 \draw[ctrl] (bc.east) -- (15.2,1.4) -- (mp0sel);  \node[clbl,align=center] at (16.0,3.0){PcSrc\\$|$\,Jump};
-\draw[ctrl] (mp1sel) -- (17.0,3.55);  \node[clbl] at (17.0,3.72){JumpR};
+\draw[ctrl] (mp1sel) -- (17.0,3.55);  \node[clbl] at (17.05,3.35){JumpR};
 \draw[ctrl] (ac.north) -- (11.4,-1.15); \node[clbl,right] at (11.5,-1.3){ALUOp};
 % sinais que chegam dos blocos de controle (stubs)
 \draw[ctrl] (13.6,2.2) -- (bc.north); \node[clbl] at (13.6,2.35){Branch};
-\draw[ctrl] (14.3,1.3) -- (dm.north); \node[clbl,align=center] at (14.95,1.25){MemRead\\MemWrite};
+\draw[ctrl] (16.1,1.6) -- (16.1,1.15) -- (14.6,1.15) -- (14.6,0.8); \node[clbl,align=center] at (16.1,1.9){MemRead\\MemWrite};
 \node[lbl,below=1pt of ac]{funct3, bit30};
 \node[lbl] at (13.6,0.55){funct3};
 

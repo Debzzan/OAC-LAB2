@@ -8,6 +8,53 @@
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{hyperref}
+%% tikz
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{positioning,calc,arrows.meta,backgrounds}
+\tikzset{
+  blk/.style ={draw,rounded corners=2pt,fill=blue!5,align=center,font=\small,line width=.5pt},
+  mem/.style ={draw,fill=orange!12,align=center,font=\small,line width=.5pt},
+  ctl/.style ={draw,rounded corners=6pt,fill=green!8,align=center,font=\footnotesize,line width=.5pt},
+  wire/.style={-{Latex[length=2mm]},line width=.5pt},
+  bus/.style ={-{Latex[length=2mm]},line width=1pt},
+  ctrl/.style={-{Latex[length=1.6mm]},densely dashed,red!75!black,line width=.6pt},
+  lbl/.style ={font=\scriptsize,inner sep=1pt},
+  clbl/.style={font=\scriptsize,inner sep=1pt,text=red!75!black},
+}
+
+% mux 2:1 (trapezio): #1 id  #2 x  #3 y
+\newcommand{\muxx}[3]{%
+  \draw[fill=black!8,line width=.5pt]
+    (#2-0.26,#3+0.62) -- (#2+0.26,#3+0.34) -- (#2+0.26,#3-0.34) -- (#2-0.26,#3-0.62) -- cycle;
+  \coordinate (#1i0)  at (#2-0.26,#3+0.40);
+  \coordinate (#1i1)  at (#2-0.26,#3-0.40);
+  \coordinate (#1o)   at (#2+0.26,#3);
+  \coordinate (#1sel) at (#2,#3-0.48);
+  \node[lbl] at (#2-0.12,#3+0.40){0};
+  \node[lbl] at (#2-0.12,#3-0.40){1};
+}
+% somador: #1 id  #2 x  #3 y
+\newcommand{\adderx}[3]{%
+  \draw[fill=blue!6,line width=.5pt] (#2,#3) circle(0.42);
+  \node at (#2,#3){$+$};
+  \coordinate (#1a) at (#2-0.40,#3+0.17);
+  \coordinate (#1b) at (#2-0.40,#3-0.17);
+  \coordinate (#1o) at (#2+0.42,#3);
+}
+% ULA (seta entalhada): #1 id  #2 x  #3 y
+\newcommand{\aluu}[3]{%
+  \draw[fill=blue!6,line width=.5pt]
+    (#2-0.85,#3+0.95) -- (#2+0.85,#3+0.45) -- (#2+0.85,#3-0.45) -- (#2-0.85,#3-0.95)
+    -- (#2-0.85,#3-0.32) -- (#2-0.45,#3) -- (#2-0.85,#3+0.32) -- cycle;
+  \node[font=\small] at (#2+0.02,#3){ULA};
+  \coordinate (#1a) at (#2-0.85,#3+0.58);
+  \coordinate (#1b) at (#2-0.85,#3-0.58);
+  \coordinate (#1o) at (#2+0.85,#3-0.18);
+  \coordinate (#1z) at (#2+0.85,#3+0.05);
+}
+%% tikz
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
@@ -68,6 +115,8 @@ RISC-V, Uniciclo, FPGA, Quartus, caminho de dados, unidade de controle
 \end{IEEEkeywords}
 
 %-----------------------------------------------------------------------
+
+\section{Diagrama}
 
 \section{Divisão de tarefas}
 
@@ -308,73 +357,54 @@ descrito e validado isoladamente antes de ser integrado ao módulo de topo (\tex
 
 \subsection{Contador de Programa e Memória de Instruções}
 O contador de programa foi descrito como um registrador de 32 bits sensível à borda de subida do
-\textit{clock}, com \textit{reset} assíncrono que o inicializa em \texttt{0x00040000}. A cada ciclo, o PC
-recebe o endereço calculado pela lógica de seleção do próximo PC. A memória de instruções foi descrita como
-um vetor de palavras de 32 bits inicializado pelo arquivo MIF. A leitura é combinacional: a partir do
-endereço de \textit{byte} fornecido pelo PC, calcula-se o índice de palavra subtraindo o endereço base e
-deslocando dois bits à direita. Implementou-se ainda uma verificação de faixa (\textit{valid\_addr}): caso
+\textit{clock}, com \textit{reset} assíncrono que o inicializa em \texttt{0x00400000}. A cada ciclo, o PC
+recebe o endereço calculado pela lógica de seleção do próximo PC. A leitura da mémória de instruções é combinacional: 
+a partir do endereço de \textit{byte} fornecido pelo PC, calcula-se o índice de palavra subtraindo o endereço base e
+deslocando dois bits à direita. Por fim é validada a faixa (\textit{valid\_addr}): caso
 o endereço esteja abaixo do início do segmento de texto ou além do tamanho da memória, a saída é forçada
-para a instrução sentinela \texttt{0x0000006F} (equivalente a \texttt{jal x0, 0}), que mantém o PC preso na
-posição corrente em vez de buscar uma palavra não inicializada. A motivação dessa decisão de projeto é
-discutida na Seção~\ref{sec:dificuldades}.
+para a instrução \texttt{0x0000006F} (equivalente a \texttt{jal x0, 0}), que mantém o PC preso na
+posição corrente.
 
 \subsection{Banco de Registradores}
-O banco foi descrito como um vetor de 32 posições de 32 bits, com leitura combinacional nas portas
+O banco foi é descrto como um vetor de 32 posições de 32 bits, com leitura combinacional nas portas
 \textit{rs1} e \textit{rs2} e escrita síncrona na borda de subida do \textit{clock}, condicionada ao sinal
-\texttt{RegWrite} e ao fato de o registrador de destino não ser \texttt{x0}. Tanto na leitura quanto na
-escrita, \texttt{x0} é tratado como constante igual a zero. Para atender ao requisito de visualização, o
-conteúdo de cada registrador foi também conectado a saídas individuais nomeadas conforme a convenção ABI
+\texttt{RegWrite} e ao fato de o registrador de destino não ser \texttt{x0}. Para ser possível visualizar
+os registradores, o conteúdo de cada registrador foi conectado a saídas individuais nomeadas conforme a convenção
 do RISC-V (\texttt{ra}, \texttt{sp}, \texttt{gp}, \texttt{tp}, \texttt{t0}--\texttt{t6},
-\texttt{s0}--\texttt{s11}, \texttt{a0}--\texttt{a7}), permitindo acompanhar a janela completa de
+\texttt{s0}--\texttt{s11}, \texttt{a0}--\texttt{a7}), permitindo verificar os valores dos
 registradores durante a simulação.
 
 \subsection{Unidade Lógica e Aritmética e seu Controle}
-A ULA foi descrita como um bloco combinacional cujo comportamento é selecionado por um código de 4 bits.
-Além das operações aritmético-lógicas usuais (soma, subtração, AND, OR, XOR, deslocamentos e comparação com
-sinal), foi incluída uma operação de repasse do segundo operando (\texttt{PASSA-B}), utilizada pela
-instrução \texttt{lui}. A unidade de controle da ULA foi descrita de forma hierárquica: a partir do sinal
-\texttt{ALUOp} (3 bits), seleciona-se a categoria da operação; quando necessário, os campos \textit{funct3}
-e o bit~30 da instrução refinam a operação final. Em particular, distinguiu-se o caso das instruções com
-imediato (Tipo-I), nas quais \texttt{funct3 = 000} deve sempre resultar em soma (\texttt{addi}), do caso
-Tipo-R, no qual o bit~30 diferencia \texttt{add} de \texttt{sub}. Ambos os módulos foram validados
-isoladamente, aplicando-se todas as combinações relevantes de \texttt{ALUOp}, \textit{funct3} e bit~30 e
-conferindo o código de operação e o resultado produzidos.
+A ULA foi descrita como um bloco combinacional com um código de 4 bits.
+Além das operações aritmético-lógicas, foi incluída uma operação de repasse do segundo operando (\texttt{PASSA-B}), 
+utilizada pela instrução \texttt{lui}. A unidade de controle da ULA é descrita de forma hierárquica: a partir do sinal
+\texttt{ALUOp} (3 bits), que seleciona a categoria da operação, quando necessário, os campos \textit{funct3}
+e o \textit{funct7} da instrução refinam a operação final. Ainda, no caso de instruçõa de
+imediato (Tipo-I), nas quais \texttt{funct3 = 000} devem ser soma (\texttt{addi}), do caso
+Tipo-R, no qual o \textit{funct7} diferencia \texttt{add} de \texttt{sub}.
 
 \subsection{Somador}
-Os somadores foram descritos como blocos combinacionais de 32 bits e instanciados duas vezes no caminho de
-dados, para o cálculo de \texttt{PC + 4} e de \texttt{PC + imediato}. A validação consistiu em verificar,
-para diferentes valores de PC e de imediato, se a saída correspondia exatamente à soma esperada,
-incluindo casos com imediato negativo (desvios para trás), nos quais a extensão de sinal do imediato é
-essencial para o cálculo correto do endereço.
+Os somadores são modulos combinacionais de 32 bits, utilizados para o cálculo de \texttt{PC + 4} e 
+de \texttt{PC + imediato}
 
 \subsection{Gerador de Imediato}
-O gerador de imediato foi descrito como um bloco combinacional que seleciona o formato (I, S, B, U ou J)
+O gerador de imediato é um modulo combinacional que seleciona o formato (I, S, B, U ou J)
 a partir do opcode e monta o valor de 32 bits por concatenação dos campos correspondentes, com extensão de
-sinal. Tomou-se cuidado especial para que cada concatenação resultasse em exatamente 32 bits e para que os
-formatos de desvio (B) e de salto (J) reintroduzissem o bit menos significativo igual a zero. A verificação
-foi feita aplicando-se instruções representativas de cada formato e conferindo o imediato resultante, com
-atenção particular aos casos de sinal negativo e aos deslocamentos de \texttt{beq}/\texttt{bne} e
-\texttt{jal}.
+sinal. Ainda,  para as instruções dos tipos B e J o bit menos significativo é igual a zero.
 
 \subsection{Memória de Dados}
-A memória de dados foi descrita como um vetor de palavras de 32 bits inicializado pelo arquivo MIF,
+A memória de dados é descrita como um vetor de palavras de 32 bits inicializado pelo arquivo MIF,
 endereçado pelo resultado da ULA. A escrita ocorre na borda de subida do \textit{clock}, condicionada ao
-sinal \texttt{MemWrite}, e a leitura é capturada na borda de descida, condicionada implicitamente ao uso do
-dado pela instrução. Essa separação temporal entre escrita e leitura dentro do mesmo ciclo foi adotada para
-manter a coerência da execução Uniciclo, evitando condições de corrida entre as duas operações.
+sinal \texttt{MemWrite}, e a leitura é capturada na borda de descida, condicionada ao uso do
+dado pela instrução.
 
 \subsection{Unidade de Controle Principal}
-A unidade de controle principal foi descrita como um bloco de lógica combinacional, utilizando uma
-estrutura de decisão sobre o campo opcode de 7 bits extraído diretamente da instrução lida da memória.
+A unidade de controle principal é um modulo de lógica combinacional, utila o opcode de 7 bits
+fornecido pela memória de instruções.
 Para cada opcode suportado, foi definido um conjunto fixo de valores para os sinais de saída (RegWrite,
 MemRead, MemWrite, MemtoReg, ALUSrc, Branch, ALUOp, Jump, JumpR e PCtoALU), seguindo a tabela verdade
 completa apresentada na Tabela~\ref{tab:controle_completo}. Para opcodes não previstos, todos os sinais de
-habilitação foram mantidos desligados por padrão, evitando que uma instrução inválida cause algum efeito
-indesejado no restante do caminho de dados.
-
-A validação desse módulo foi feita de forma isolada no Waveform Editor do Quartus, aplicando-se cada
-opcode como entrada e conferindo, um a um, se a combinação de sinais gerada na saída correspondia
-exatamente à tabela de projeto antes da integração com o restante do caminho de dados.
+habilitação foram mantidos desligados por padrão.
 
 \begin{table*}[!t]
 \caption{Tabela verdade completa da Unidade de Controle implementada}
@@ -404,12 +434,8 @@ inválido (default)      & ------- & 0 & 00 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 000 \\
 
 \subsection{Multiplexador 2:1}
 O módulo do multiplexador foi escrito de forma genérica, com a largura do barramento de dados como
-parâmetro, o que permitiu reaproveitá-lo nos diversos pontos de seleção do caminho de dados sem reescrever a
-lógica em cada lugar. Essa escolha reduz a duplicação de código e facilita a verificação, já que o
-comportamento do multiplexador só precisa ser validado uma vez para que a confiança se estenda a todas as
-instâncias seguintes. A validação foi feita no Waveform Editor, alternando o sinal de seleção entre 0 e 1
-para diferentes combinações de entrada e conferindo se a entrada correta era propagada para a saída em
-cada caso.
+parâmetro, o que permitiu reaproveitar nos diversos pontos de seleção do caminho de dados sem reescrever a
+lógica em cada lugar.
 
 \subsection{Integração e Lógica de Salto}
 A integração dos módulos foi feita no módulo de topo, conectando os sinais de controle às entradas de
@@ -427,90 +453,25 @@ sinal \texttt{Branch}, a saída \texttt{Zero} da ULA e o campo \textit{funct3} p
 
 \section{Resultados experimentais}
 
-\subsection{Contador de Programa e Memória de Instruções}
-Na simulação, verificou-se que, após o \textit{reset}, o PC parte de \texttt{0x00004000} e avança de quatro
-em quatro \textit{bytes} a cada ciclo, exceto quando uma instrução de desvio ou salto altera o fluxo. A
-memória de instruções entregou, a cada endereço, a palavra de 32 bits correspondente do arquivo
-\texttt{UnicicloInst.mif}, e a verificação de faixa comportou-se conforme o esperado: endereços fora do
-segmento de texto resultaram na instrução sentinela \texttt{0x0000006F}, mantendo o PC estável em vez de
-buscar conteúdo indefinido.
+A validação do modelo completo foi feita utilizando os casos testes disponibilizados durante as apresentações de código.
+A validação da operação correto do modelo em todos os 3 níveis solicitados pelo professor é entendida como suficiente para a
+os propósitos de validação do trabalho. Em cada cenário de teste é verificado o valor dos registradores e dos dados gravados na memória
+de dados ao final da execução, caso esses estejam de acordo com os previstos no mesmo código assembly simulado no RARS o teste é
+considerado valido.
 
-\subsection{Banco de Registradores}
-A simulação confirmou a leitura assíncrona nas portas \textit{rs1} e \textit{rs2} e a escrita síncrona em
-\textit{rd}, com \texttt{x0} permanecendo em zero em todas as situações. A exposição individual dos 32
-registradores permitiu acompanhar, lado a lado, o efeito de cada instrução sobre o estado da máquina,
-facilitando a conferência dos resultados das demais unidades.
+Em seguida são apresentadas as formas de onda e analisados os casos teste propostos pelo professor.
+\subsection{Nível 1 - Dia }
 
-\subsection{Unidade Lógica e Aritmética e seu Controle}
-A ULA e sua unidade de controle produziram, para cada combinação de \texttt{ALUOp}, \textit{funct3} e
-bit~30, o código de operação e o resultado esperados, incluindo o caso especial \texttt{PASSA-B} usado pela
-instrução \texttt{lui} e a distinção entre \texttt{addi} (soma forçada) e o par \texttt{add}/\texttt{sub}.
-O sinal \texttt{Zero} acompanhou corretamente o resultado nulo, dando suporte à decisão de desvio
-condicional.
+\subsection{Nível 2 - Dia }
 
-\subsection{Somador}
-Os somadores produziram \texttt{PC + 4} e \texttt{PC + imediato} corretamente, inclusive para imediatos
-negativos, situação em que o desvio para trás depende da extensão de sinal correta do imediato.
+\subsection{Nível 3 - Dia }
 
-\subsection{Gerador de Imediato}
-O gerador de imediato reproduziu os valores esperados para os formatos I, S, B, U e J, com a extensão de
-sinal correta e com o bit menos significativo igual a zero nos formatos B e J. A conferência desses valores
-foi determinante para validar os endereços de desvio e de salto, conforme discutido na
-Seção~\ref{sec:dificuldades}.
 
-\subsection{Memória de Dados}
-A memória de dados respondeu corretamente às instruções \texttt{lw} e \texttt{sw}: a escrita na borda de
-subida e a leitura na borda de descida permitiram que, dentro de um mesmo ciclo, o dado armazenado fosse
-posteriormente recuperado sem condição de corrida, mantendo a coerência da execução Uniciclo.
-
-\subsection{Unidade de Controle Principal e Multiplexador 2:1}
-A verificação de ambos os módulos foi feita por meio de \textit{testbenches} próprios, escritos em Verilog
-e executados no simulador, que comparam automaticamente a saída obtida com o valor esperado em cada caso de
-teste e reportam o resultado.
-
-Para a unidade de controle, o \textit{testbench} aplicou, um a um, os opcodes correspondentes a todos os
-grupos de instruções suportados pelo projeto, além de um opcode inválido para verificar o comportamento
-padrão. A Tabela \ref{tab:result_controle} resume os casos testados, todos aprovados.
-
-\begin{table}[!t]
-\caption{Casos de teste da Unidade de Controle}
-\begin{center}
-\begin{tabular}{c|c|c}
-\hline \hline
-\textbf{Opcode (bin)} & \textbf{Opcode (hex)} & \textbf{Resultado} \\
-\hline
-0110011 & 33 & PASS \\
-0010011 & 13 & PASS \\
-0000011 & 03 & PASS \\
-0100011 & 23 & PASS \\
-1100011 & 63 & PASS \\
-1101111 & 6F & PASS \\
-1100111 & 67 & PASS \\
-0110111 & 37 & PASS \\
-0010111 & 17 & PASS \\
-1111111 & 7F & PASS \\
-\hline \hline
-\end{tabular}
-\end{center}
-\label{tab:result_controle}
-\end{table}
-
-Como a unidade de controle é um circuito puramente combinacional, a forma de onda gerada na simulação
-apresenta os sinais de saída constantes para cada opcode aplicado, sem transições intermediárias, o que é
-o comportamento esperado para esse tipo de lógica.
-
-Para o multiplexador, o \textit{testbench} aplicou diferentes combinações de dados de 32 bits nas duas
-entradas, variando o sinal de seleção entre 0 e 1, e conferiu se a saída reproduzia exatamente a entrada
-selecionada em cada caso. Foram usados valores representativos como AAAAAAAA, 55555555, DEADBEEF e
-CAFEBABE, e todos os casos foram aprovados, confirmando o funcionamento correto do módulo para qualquer
-dado de entrada.
-
-% TODO (grupo): inserir capturas de tela do Waveform Editor com as formas de onda da unidade de controle,
-% do multiplexador e da execução integrada (PC, instrução, registradores e sinais de controle), conforme
-% exigido no Requisito 4 da especificação.
 
 \subsection{Análise de Desempenho das Unidades Funcionais}
-% TODO (grupo): preencher com os tempos medidos no modo de compilação Timing do Quartus.
+%
+%ANALISE DE TEMPO CONFORME SOLICITADO NO RELATORIO
+%
 A análise de desempenho deve ser obtida no modo de compilação \textit{Timing} do Quartus, que considera os
 atrasos de propagação reais de cada unidade funcional. Qualitativamente, espera-se que o caminho crítico do
 processador Uniciclo seja determinado pela instrução de carga (\texttt{lw}), cujo percurso atravessa, em
@@ -523,26 +484,26 @@ preenchidas a partir dos relatórios de temporização da síntese, identificand
 \textit{gargalo} (\textit{bottlenecks}).
 
 \section{Análise de Resultados}
-A unidade de controle principal e o multiplexador atenderam ao comportamento esperado em todos os casos de
-teste, gerando os sinais corretos para cada opcode e propagando o dado certo em função do sinal de seleção.
-A verificação automática por \textit{testbench} foi importante porque permitiu confirmar o comportamento de
-cada módulo de forma isolada, antes da integração com o restante do caminho de dados, reduzindo a chance de
-erros difíceis de localizar em uma etapa posterior. Após a integração, o caminho de dados completo executou
-o conjunto de instruções pré-compiladas, atualizando corretamente o PC, o banco de registradores e a
-memória de dados ao longo dos ciclos.
+
 
 \subsection{Dificuldades de Implementação e Depuração}
 \label{sec:dificuldades}
-As principais dificuldades do trabalho concentraram-se em dois eixos relacionados: (i) a implementação das
+As principais dificuldades do trabalho concentraram-se em dois eixos relacionados: 
+\begin{itemize}
+    \item a implementação das
 instruções de salto e de formação de constantes (\texttt{jal}, \texttt{jalr}, \texttt{lui} e
-\texttt{auipc}), que extrapolam o caminho de dados de referência; e (ii) o tratamento de saltos para fora
+\texttt{auipc}), que extrapolam o caminho de dados de referência;
+    \item  o tratamento de saltos para fora
 da região válida da memória de instruções, agravado por imediatos que inicialmente não eram montados
-corretamente em 32 bits.
+corretamente em 32 bits;
+    \item Inclusão de novos sinais de controle não contemplados no modelo de referência.
+\end{itemize}
+
 
 \subsubsection{Implementação dos saltos, \texttt{auipc}, \texttt{lui}, \texttt{jal} e \texttt{jalr}}
 O caminho de dados Uniciclo de referência \cite{patterson2020computer} contempla apenas as instruções
 Tipo-R, \texttt{lw}, \texttt{sw} e \texttt{beq}. A inclusão das demais instruções exigiu acrescentar
-sinais de controle e caminhos de dados que não existem na Figura~1 da especificação, o que foi a fonte da
+sinais de controle e caminhos de dados que não existem na especificação, o que foi a fonte da
 maior parte das dificuldades:
 
 \begin{itemize}
@@ -550,85 +511,62 @@ maior parte das dificuldades:
     \texttt{PC + 4} no registrador de destino, mas o multiplexador de escrita de volta original só escolhia
     entre o resultado da ULA e o dado da memória. Foi necessário ampliar o sinal \texttt{MemtoReg} para 2
     bits e acrescentar um segundo nível de multiplexador para rotear \texttt{PC + 4} até o banco de
-    registradores. Antes dessa correção, o registrador de destino recebia o resultado da ULA, e os
-    endereços de retorno gravados estavam errados, o que só se manifestava ciclos depois, ao retornar do
-    salto.
+    registradores.
 
     \item \textbf{\texttt{auipc} — PC como operando da ULA.} A instrução \texttt{auipc} calcula
     \texttt{PC + imediato}, e não \texttt{rs1 + imediato}. Como a ULA, no modelo de referência, recebe
     sempre \textit{rs1} em seu primeiro operando, foi preciso introduzir o sinal \texttt{PCtoALU} e um
-    multiplexador adicional que substitui \textit{rs1} pelo PC nessa instrução.
+    multiplexador adicional que substitui \textit{rs1} pelo PC.
 
     \item \textbf{\texttt{lui} — repasse do imediato.} A instrução \texttt{lui} deveria simplesmente
-    escrever o imediato (com os 12 bits inferiores zerados) no registrador de destino. Uma armadilha sutil
-    é que os bits \texttt{[19:15]} da instrução \texttt{lui} fazem parte do imediato, mas o caminho de dados
-    sempre os interpreta como o endereço de \textit{rs1}; assim, somar \textit{rs1} ao imediato produziria
-    um resultado contaminado por uma leitura ``fantasma'' de registrador. A solução foi criar uma operação
-    dedicada na ULA (\texttt{PASSA-B}, código \texttt{4'b1000}), selecionada por \texttt{ALUOp = 100}, que
-    descarta o primeiro operando e repassa apenas o imediato. O mesmo cuidado vale para \texttt{auipc}, em
-    que a leitura fantasma de \textit{rs1} é neutralizada pelo multiplexador de \texttt{PCtoALU}.
+    escrever o imediato (com os 12 bits inferiores zerados) no registrador de destino. Contudo os bits 
+    \texttt{[19:15]} da instrução \texttt{lui} fazem parte do imediato, mas o caminho de dados
+    sempre os interpreta como o endereço de \textit{rs1}; assim, somar \textit{rs1} ao imediato produz erro. 
+    A solução foi criar uma operação dedicada na ULA (\texttt{PASSA-B}, código \texttt{4'b1000}), 
+    selecionada por \texttt{ALUOp = 100}, que descarta o primeiro operando e repassa apenas o imediato.
 
     \item \textbf{Cascata de seleção do próximo PC.} Com três origens possíveis para o próximo endereço
     (\texttt{PC + 4}; \texttt{PC + imediato} para \texttt{beq}/\texttt{bne}/\texttt{jal}; e o alvo de
     \texttt{jalr}), foi necessário organizar uma cascata de multiplexadores com a prioridade correta. O
     primeiro nível escolhe entre \texttt{PC + 4} e \texttt{PC + imediato} a partir de
     \texttt{(PcSrc OR Jump)}; o segundo nível sobrepõe o alvo de \texttt{jalr} quando \texttt{JumpR} está
-    ativo. Erros na ordem dessa cascata faziam, por exemplo, um \texttt{jalr} ser ``mascarado'' por um
-    desvio condicional inativo.
+    ativo.
 
     \item \textbf{\texttt{jalr} — alinhamento do alvo.} O endereço de destino do \texttt{jalr} é
     \texttt{(rs1 + imediato)} com o bit menos significativo forçado a zero
-    (\texttt{\{alu\_result[31:1], 1'b0\}}). Omitir esse zeramento gerava endereços desalinhados, que por
-    sua vez caíam fora das posições válidas da memória de instruções.
+    (\texttt{\{alu\_result[31:1], 1'b0\}}).
 
-    \item \textbf{Distinção \texttt{jal} $\times$ \texttt{jalr} no gerador de imediato.} Embora ambas sejam
-    saltos incondicionais, \texttt{jal} usa imediato no formato J (relativo ao PC) e \texttt{jalr} usa
-    imediato no formato I (relativo a \textit{rs1}, com \texttt{ALUSrc = 1}). Tratar as duas com o mesmo
-    formato de imediato levava a alvos completamente incorretos.
+    \item \textbf{Distinção \texttt{jal} $\times$ \texttt{jalr} no gerador de imediato.} Embora as duas instruções sejam
+    saltos incondicionais, \texttt{jal} usa imediato no formato J e \texttt{jalr} usa
+    imediato no formato I (relativo a \textit{rs1}, com \texttt{ALUSrc = 1}).
 \end{itemize}
 
 \subsubsection{Saltos para fora da memória e validação dos 32 bits}
-A segunda grande dificuldade surgiu justamente quando os saltos passaram a funcionar: em algumas execuções,
-o PC alcançava endereços fora da região efetivamente carregada do segmento de texto. Como, inicialmente, a
-memória de instruções não validava o endereço recebido, a leitura de uma posição não inicializada produzia
-uma palavra de 32 bits indefinida (valores \texttt{X} na simulação). Essa palavra indefinida era então
-decodificada pela unidade de controle como um opcode arbitrário, ativando sinais de controle aleatórios e
-corrompendo o banco de registradores e a memória de dados. O sintoma observado — registradores assumindo
-valores sem sentido vários ciclos após o salto — era difícil de localizar, pois a causa (o salto para fora
-da memória) e o efeito (a corrupção do estado) estavam separados no tempo.
-
-A investigação revelou duas causas que se reforçavam mutuamente:
+Em algumas execuções o PC alcançava endereços fora da região do segmento de texto. Assim, foram identificados
+os seguintes desafios:
 
 \begin{enumerate}
-    \item \textbf{Tradução de endereço ausente.} Como o PC inicia em \texttt{0x00004000} e não em zero, o
+    \item \textbf{Tradução de endereço ausente.} Como o PC inicia em \texttt{0x00400000} e não em zero, o
     índice de palavra não pode ser obtido diretamente de \texttt{addr >> 2}; é preciso primeiro subtrair o
     endereço base do segmento (\texttt{byte\_offset = addr - TEXT\_BASE}) e só então deslocar dois bits à
-    direita. Sem essa tradução, qualquer endereço já indexava posições muito além do conteúdo carregado.
+    direita. Sem essa tradução, qualquer endereço já indexava posições incorretas.
 
     \item \textbf{Imediatos não validados em 32 bits.} O código de montagem dos imediatos, em versões
-    iniciais, não garantia que cada concatenação somasse exatamente 32 bits — seja por erro na largura da
-    replicação do bit de sinal, seja por omissão do bit menos significativo implícito (igual a zero) nos
-    formatos B e J. Um imediato mal formado produzia um \textit{offset} de desvio/salto incorreto e, por
-    consequência, fazia o desvio aterrissar fora da região correta da memória. Esse é o elo direto entre o
-    problema da ``validação dos 32 bits'' e os ``saltos para fora da memória''.
+    iniciais, não garantia que cada concatenação somasse exatamente 32 bits, por
+    consequência, fazia o desvio ir para região correta da memória.
 \end{enumerate}
 
-A solução combinou três medidas. Primeiro, padronizou-se a tradução de endereço relativa a
-\texttt{TEXT\_BASE}. Segundo, reescreveu-se o gerador de imediato verificando, campo a campo, que cada
-formato soma exatamente 32 bits: por exemplo, o formato B é montado como
-$20 + 1 + 6 + 4 + 1 = 32$ bits e o formato J como $12 + 8 + 1 + 10 + 1 = 32$ bits, sempre com o bit menos
-significativo igual a zero. Terceiro, adicionou-se à memória de instruções uma verificação de faixa
-(\textit{valid\_addr}): quando o endereço está abaixo do início do segmento de texto ou além do tamanho da
-memória, a saída é forçada para a instrução sentinela \texttt{0x0000006F} (\texttt{jal x0, 0}), que prende
-o PC na posição corrente. Essa instrução sentinela transforma um salto para fora da memória — antes
-catastrófico e silencioso — em uma condição controlada e observável: em vez de propagar valores
-indefinidos, a máquina entra em um laço estável, tornando o problema imediatamente visível na simulação.
+A solução combinou três medidas:
+\begin{itemize}
+    \item Padronizar a tradução de endereço relativa a
+\texttt{TEXT\_BASE};
+    \item Reavaliar o gerador de imediato verificando que cada
+formato soma exatamente 32 bits
+    \item Adicionar à memória de instruções uma verificação de faixa
+(\textit{valid\_addr}), caso a instrução esteja fora do intervalo possível o processador entra em loop, 
+a saída é forçada para a instrução \texttt{0x0000006F} (\texttt{jal x0, 0}).
+\end{itemize}
 
-A metodologia de depuração que permitiu isolar essas falhas baseou-se na verificação modular (cada bloco
-testado isoladamente antes da integração) e na observação, ciclo a ciclo, do PC e da palavra de instrução
-de 32 bits no Waveform Editor. A introdução da instrução sentinela foi particularmente útil porque deu uma
-``assinatura'' reconhecível ao evento de salto para fora da memória, encurtando o tempo entre a manifestação
-do sintoma e a identificação da causa.
 
 \section{Conclusão}
 A construção da Unidade Operativa Uniciclo RISC-V32I mostrou, na prática, como a decodificação do opcode
