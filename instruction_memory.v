@@ -4,7 +4,7 @@ module im (
     output reg [31:0] inst
 );
 
-    parameter TEXT_BASE = 32'h00004000;
+    parameter TEXT_BASE = 32'h00400000;
     parameter DEPTH = 32768;
 
     (* ram_init_file = "UnicicloInst.mif" *) reg [31:0] mem [0:DEPTH-1];
