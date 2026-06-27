@@ -149,103 +149,85 @@ Esse mecanismo de validação é discutido em detalhe na Seção~\ref{sec:dificu
 
 \subsection{Banco de Registradores}
 O banco de registradores implementa os 32 registradores de 32 bits do RISC-V32I (\texttt{x0} a
-\texttt{x31}). Ele dispõe de duas portas de leitura assíncronas (combinacionais), endereçadas pelos campos
+\texttt{x31}). Ele dispõe de duas portas de leitura assíncronas, combinacionais, endereçadas pelos campos
 \textit{rs1} e \textit{rs2} da instrução, e de uma porta de escrita síncrona, endereçada pelo campo
 \textit{rd} e habilitada pelo sinal de controle \texttt{RegWrite}. A escrita ocorre na borda de subida do
 \textit{clock}, garantindo que o valor lido em um ciclo corresponda ao conteúdo anterior à escrita do mesmo
-ciclo. O registrador \texttt{x0} é mantido permanentemente em zero: sua leitura sempre retorna zero e
-qualquer tentativa de escrita nele é ignorada, conforme a especificação da arquitetura
-\cite{referenceGuide}. Para fins de verificação, o módulo expõe ainda o conteúdo de todos os 32
-registradores em saídas dedicadas, possibilitando a visualização simultânea de toda a janela de
-registradores na simulação, atendendo à exigência da especificação de apresentar em tela o conteúdo dos
-trinta e dois registradores.
+ciclo. O registrador \texttt{x0} é mantido permanentemente em zero. 
+O módulo expõe o conteúdo de todos os 32 registradores em saídas dedicadas, 
+possibilitando a visualização simultânea de toda a janela de registradores na simulação.
+
 
 \subsection{Unidade Lógica e Aritmética (ULA) e seu Controle}
 A Unidade Lógica e Aritmética (ULA) é o bloco combinacional responsável pelas operações aritméticas e
-lógicas do processador. Em sua entrada recebe dois operandos de 32 bits e um código de operação de 4 bits;
-em sua saída produz o resultado de 32 bits e o sinal \texttt{Zero}, que indica se o resultado é nulo e é
-utilizado pela lógica de desvio condicional. As operações implementadas incluem soma, subtração, AND, OR,
-XOR, deslocamento lógico à esquerda (\texttt{SLL}), deslocamento lógico à direita (\texttt{SRL}),
-comparação com sinal (\texttt{SLT}) e uma operação de repasse do segundo operando (\texttt{PASSA-B}),
+lógicas do processador. Recebe como entrada dois operandos de 32 bits e um código de operação de 4 bits;
+em sua saída produz o resultado de 32 bits e o sinal \texttt{Zero}, que indica se o resultado da operação é nulo e é
+utilizado pela lógica de desvio condicional. As operações implementadas solicitadas foram implementadas e 
+uma operação de repasse do segundo operando,
 introduzida especialmente para dar suporte à instrução \texttt{lui}.
 
-A escolha da operação efetiva fica a cargo da unidade de controle da ULA (\textit{ALU control}), um bloco
+A unidade de controle (\textit{ALU control}), um bloco
 combinacional que combina o sinal \texttt{ALUOp}, gerado pela unidade de controle principal, com os campos
-\textit{funct3} e o bit~30 da instrução (que distingue, por exemplo, \texttt{add} de \texttt{sub}). Esse
-arranjo em dois níveis evita que a unidade de controle principal precise conhecer todos os detalhes de cada
-operação: ela apenas indica a categoria (acesso à memória, desvio, Tipo-R, Tipo-I ou \texttt{lui}), e a
-unidade de controle da ULA refina essa categoria na operação final \cite{patterson2020computer}.
+\textit{funct3} e o \textit{funct7}.
 
 \subsection{Somador}
 O caminho de dados utiliza somadores dedicados de 32 bits, descritos como blocos puramente combinacionais
 que produzem a soma de duas entradas. São empregados dois somadores no estágio de atualização do PC: o
 primeiro calcula \texttt{PC + 4}, endereço da instrução sequencial seguinte; o segundo calcula
-\texttt{PC + imediato}, endereço alvo dos desvios condicionais (\texttt{beq}, \texttt{bne}) e do salto
-\texttt{jal}. Manter esses somadores como módulos separados e simples mantém o caminho de dados próximo do
-modelo de referência e facilita o rastreamento dos endereços na simulação.
+\texttt{PC + imediato}, endereço alvo dos desvios condicionais e do salto
+\texttt{jal}.
 
 \subsection{Gerador de Imediato}
-O gerador de imediato (\textit{Imm Gen}) extrai e monta o valor imediato de 32 bits a partir dos campos da
-instrução, selecionando o formato correto com base no opcode. A arquitetura RISC-V32I codifica os imediatos
-em diferentes formatos (I, S, B, U e J), nos quais os bits do imediato aparecem espalhados em posições
-distintas da palavra de instrução, sempre de modo a manter o bit de sinal na posição mais significativa
-\cite{referenceGuide}. O módulo realiza a extensão de sinal para 32 bits em todos os formatos com sinal e,
-nos formatos de desvio (B) e de salto (J), reintroduz o bit menos significativo igual a zero, refletindo o
-fato de que esses deslocamentos são múltiplos de dois \textit{bytes}. A correta montagem desses 32 bits é
-um ponto sensível do projeto e está diretamente associada às dificuldades relatadas na
-Seção~\ref{sec:dificuldades}, uma vez que um imediato mal formado leva ao cálculo de endereços de desvio
-incorretos.
+O gerador de imediato (\textit{Imm Gen}) monta o valor imediato de 32 bits a partir dos campos da
+instrução, selecionando o formato com base no opcode conforme o \cite{referenceGuide}. 
+O módulo realiza a extensão de sinal para 32 bits em todos os formatos com sinal e,
+nos formatos de desvio (B) e de salto (J), introduz o bit menos significativo igual a zero, diferente da
+literatura de referência \cite{patterson2020computer}, aonde é optado por realizar um \text{shift left}
+após o gerador de imediato.
 
 \subsection{Memória de Dados}
 A memória de dados armazena os operandos manipulados pelas instruções de carga (\texttt{lw}, \texttt{lhu})
 e armazenamento (\texttt{sw}), sendo inicializada a partir do arquivo \texttt{UnicicloData.mif}. Ela é
-endereçada pelo resultado da ULA (que, nessas instruções, corresponde ao endereço efetivo \texttt{rs1 +
-imediato}) e controlada pelos sinais \texttt{MemRead} e \texttt{MemWrite}. Para compatibilizar a leitura e
-a escrita dentro de um único ciclo de \textit{clock}, adotou-se a estratégia de escrever na memória na
-borda de subida e disponibilizar o dado lido na borda de descida do \textit{clock}, de modo que a leitura e
-a escrita não disputem o mesmo instante de tempo e o caminho de dados permaneça coerente em uma execução
-Uniciclo.
+endereçada pelo resultado da ULA e controlada pelos sinais \texttt{MemRead} e \texttt{MemWrite}. 
+Para compatibilizar a leitura e a escrita dentro de um único ciclo de \textit{clock}, a escrita na memória ocorre na
+borda de subida e leitura do dado na borda de descida do \textit{clock}, de modo que a leitura e
+a escrita não disputem o mesmo instante de tempo.
 
 \subsection{Unidade de Controle Principal}
-A Unidade de Controle Uniciclo é o bloco responsável por observar o campo opcode da instrução, com 7 bits
-de largura, e decidir quais sinais devem ser ativados no restante do caminho de dados para que aquela
-instrução específica seja executada corretamente \cite{patterson2020computer}. Diferente de um registrador
-ou de uma memória, ela não guarda nenhum valor de um ciclo para o outro: assim que a memória de instruções
-entrega um novo opcode na sua entrada, a saída já reflete os novos sinais de controle, respeitando apenas
-o tempo de propagação da lógica combinacional utilizada na sua implementação.
+A Unidade de Controle Uniciclo recebe os 7 bits do opcode decide quais sinais devem ser ativados no 
+restante do caminho de dados para que a instrução seja executada \cite{patterson2020computer}. 
+Em cada novo ciclo a memória de instruções
+entrega um novo opcode na sua entrada e a saída já reflete os novos sinais de controle.
 
-Os sinais produzidos por esse bloco, junto com o efeito de cada um sobre o caminho de dados, são os
-seguintes:
+Os sinais produzidos por esse bloco e seus efeitos são os seguintes:
 
 \begin{itemize}
-    \item RegWrite: habilita a escrita no banco de registradores;
-    \item MemRead: habilita a leitura da memória de dados;
-    \item MemWrite: habilita a escrita na memória de dados;
-    \item MemtoReg: seleciona, por meio de multiplexadores, a origem do valor gravado no registrador de
-    destino; foi ampliado para 2 bits a fim de incluir, além do resultado da ULA e do dado lido da memória,
+    \item RegWrite(1bit): habilita a escrita no banco de registradores;
+    \item MemRead(1bit): habilita a leitura da memória de dados;
+    \item MemWrite(1bit): habilita a escrita na memória de dados;
+    \item MemtoReg(2bit): seleciona, por meio de multiplexadores, a origem do valor gravado no registrador de
+    destino. Ampliado para 2 bits a fim de incluir, além do resultado da ULA e do dado lido da memória,
     o endereço de retorno \texttt{PC + 4} usado por \texttt{jal} e \texttt{jalr};
-    \item ALUSrc: seleciona, por meio de um multiplexador, se a segunda entrada da ULA é o conteúdo
+    \item ALUSrc(1bit): seleciona, por meio de um multiplexador, se a segunda entrada da ULA é o conteúdo
     do segundo registrador lido ou o valor imediato gerado pelo gerador de imediato;
-    \item Branch: indica que a instrução é um desvio condicional, sinal que é combinado com a saída Zero
+    \item Branch(1bit): indica que a instrução é um desvio condicional, sinal que é combinado com a saída Zero
     da ULA (e com o campo \textit{funct3}) para decidir o próximo valor do contador de programa;
-    \item ALUOp: indica de forma resumida o tipo de operação que a ULA deve realizar, sendo depois
+    \item ALUOp(3bit): indica de forma resumida o tipo de operação que a ULA deve realizar, sendo depois
     combinado com os campos funct3 e funct7 pela unidade de controle da ULA para definir a operação final;
-    \item Jump, JumpR e PCtoALU: sinais adicionais, ausentes no modelo de referência, introduzidos para dar
+    \item Jump(1bit), JumpR(1bit) e PCtoALU(1bit): sinais adicionais, ausentes no modelo de referência, introduzidos para dar
     suporte às instruções \texttt{jal}, \texttt{jalr} e \texttt{auipc}, respectivamente, conforme detalhado
-    na Seção~\ref{sec:dificuldades}.
+    posteriormente.
 \end{itemize}
 
 A Tabela \ref{tab:controle} apresenta a tabela verdade reduzida da unidade de controle para o modelo de
 referência, relacionando cada grupo de instruções, identificado por seu opcode, aos valores dos sinais de
 controle gerados \cite{patterson2020computer}. O valor X (don't care) indica situações em que o sinal não
 influencia o resultado da instrução, pois seu efeito não é utilizado naquele caso. No modelo clássico, o
-campo ALUOp utiliza 2 bits para identificar a categoria da operação a ser realizada pela ULA: 00 para
-acessos à memória, 01 para desvios e 10 para operações lógico-aritméticas. Na implementação deste trabalho,
+campo ALUOp utiliza 2 bits para identificar a categoria da operação a ser realizada pela ULA. Na implementação 
 o campo ALUOp foi ampliado para 3 bits, a fim de também distinguir as operações com imediato (Tipo-I) e a
 operação de repasse exigida pela instrução \texttt{lui}, sendo o detalhamento da operação final feito pela
 unidade de controle da ULA a partir dos campos funct3 e funct7. A tabela completa, com todas as instruções
-implementadas e os sinais adicionais, é apresentada na Seção de Procedimentos
-(Tabela~\ref{tab:controle_completo}).
+implementadas e os sinais adicionais, é apresentada em (Tabela~\ref{tab:controle_completo}).
 
 \begin{table}[!t]
 \caption{Tabela verdade reduzida da Unidade de Controle (modelo de referência)}
@@ -266,14 +248,14 @@ beq & 1100011 & 0 & X & 0 & 0 & 0 & 1 & 01 \\
 \label{tab:controle}
 \end{table}
 
-Esses quatro grupos representam o modelo de referência apresentado em sala \cite{patterson2020computer}. A
+Esses quatro grupos representam o modelo de referência apresentado na literatura \cite{patterson2020computer}. A
 mesma estrutura combinacional foi utilizada para reconhecer também os demais opcodes do conjunto de
 instruções adotado no projeto, atribuindo a cada um deles a combinação adequada de sinais conforme o
 formato correspondente. Para opcodes não previstos, todos os sinais de habilitação são mantidos desligados
 por padrão, evitando que uma instrução inválida cause efeitos indesejados no restante do caminho de dados.
 
 \subsection{Multiplexador 2:1}
-O multiplexador 2 para 1 é o elemento combinacional mais simples utilizado no caminho de dados: ele recebe
+O multiplexador 2 para 1 é o elemento combinacional que recebe
 duas entradas de dados e, dependendo do valor de um único bit de seleção, decide qual delas aparece na
 saída \cite{patterson2020computer}. A Tabela \ref{tab:mux} resume seu comportamento.
 
@@ -292,34 +274,41 @@ saída \cite{patterson2020computer}. A Tabela \ref{tab:mux} resume seu comportam
 \label{tab:mux}
 \end{table}
 
-Em vez de montar um circuito seletor diferente para cada ponto do caminho de dados onde havia essa
-necessidade, optou-se por um único módulo genérico e parametrizável quanto à largura do barramento, depois
+Em vez de montar um circuito seletor diferente para cada ponto do caminho de dados foi construído um único módulo 
+genérico e parametrizável quanto à largura do barramento, depois
 instanciado nos diversos pontos do caminho de dados Uniciclo em que existe seleção entre duas fontes de
-dados. O primeiro deles escolhe entre o dado lido do segundo registrador e o valor imediato, de acordo com
-o sinal ALUSrc. Outro multiplexador escolhe entre o conteúdo de \textit{rs1} e o valor do PC como primeiro
-operando da ULA, em apoio à instrução \texttt{auipc}. No estágio de escrita de volta, dois
-multiplexadores em cascata selecionam entre o resultado da ULA, o dado lido da memória e o endereço de
-retorno \texttt{PC + 4}, de acordo com o sinal MemtoReg de 2 bits. Por fim, no estágio de atualização do
-PC, multiplexadores em cascata escolhem entre o endereço sequencial \texttt{PC + 4}, o endereço de desvio
-\texttt{PC + imediato} e o endereço de \texttt{jalr}, conforme a combinação dos sinais Branch/Zero,
-\texttt{Jump} e \texttt{JumpR}.
+dados. Os mux são usados como:
+\begin{itemize}
+    \item Escolhe entre o dado lido do segundo registrador e o valor imediato, de acordo com
+o sinal ALUSrc;
+
+    \item Escolhe entre o conteúdo de \textit{rs1} e o valor do PC como primeiro
+operando da ULA, em apoio à instrução \texttt{auipc};
+
+    \item No estágio de escrita de volta, dois multiplexadores em cascata selecionam entre o resultado da 
+    ULA, o dado lido da memória e o endereço de 
+    retorno \texttt{PC + 4}, de acordo com o sinal MemtoReg de 2 bits;
+
+    \item no estágio de atualização do
+    PC, multiplexadores em cascata escolhem entre o endereço sequencial \texttt{PC + 4}, o endereço de desvio
+    \texttt{PC + imediato} e o endereço de \texttt{jalr}, conforme a combinação dos sinais Branch/Zero,
+    \texttt{Jump} e \texttt{JumpR}.
+\end{itemize} 
 
 \section{Procedimentos e Métodos}
 
 \subsection{Ferramentas Utilizadas}
 O desenvolvimento foi realizado no ambiente Quartus II Altera, utilizando descrição de \textit{hardware} em
-linguagem Verilog para todos os módulos do caminho de dados. A verificação funcional foi conduzida no
-módulo de simulação Waveform Editor (Vector Waveform Editor) do próprio Quartus, complementada, em alguns
-módulos, por \textit{testbenches} escritos em Verilog que comparam automaticamente a saída obtida com o
-valor esperado em cada caso de teste. As memórias de instruções e de dados foram inicializadas a partir dos
-arquivos no formato MIF (\texttt{UnicicloInst.mif} e \texttt{UnicicloData.mif}), de acordo com o mapa de
-endereços do RISC-V32I sugerido na especificação. A metodologia adotada foi incremental: cada módulo foi
-descrito e validado isoladamente antes de ser integrado ao módulo de topo (\texttt{riscv\_cpu}), o que
-reduziu o espaço de busca durante a depuração da unidade operativa completa.
+linguagem Verilog. A verificação funcional foi conduzida no
+módulo de simulação Waveform Editor (Vector Waveform Editor) do próprio Quartus. 
+As memórias de instruções e de dados foram inicializadas a partir dos
+arquivos no formato MIF (\texttt{UnicicloInst.mif} e \texttt{UnicicloData.mif}). 
+A metodologia adotada foi incremental: cada módulo foi
+descrito e validado isoladamente antes de ser integrado ao módulo de topo (\texttt{riscv\_cpu}).
 
 \subsection{Contador de Programa e Memória de Instruções}
 O contador de programa foi descrito como um registrador de 32 bits sensível à borda de subida do
-\textit{clock}, com \textit{reset} assíncrono que o inicializa em \texttt{0x00004000}. A cada ciclo, o PC
+\textit{clock}, com \textit{reset} assíncrono que o inicializa em \texttt{0x00040000}. A cada ciclo, o PC
 recebe o endereço calculado pela lógica de seleção do próximo PC. A memória de instruções foi descrita como
 um vetor de palavras de 32 bits inicializado pelo arquivo MIF. A leitura é combinacional: a partir do
 endereço de \textit{byte} fornecido pelo PC, calcula-se o índice de palavra subtraindo o endereço base e
