@@ -49,22 +49,22 @@ Brasília, Brazil \\
 
 \begin{abstract}
 No presente trabalho é apresentado o desenvolvimento da Unidade Operativa Uniciclo da arquitetura
-RISC-V32I, implementada no ambiente Quartus II. O projeto contempla os módulos que compõem o caminho de
+RISC-V32I, implementada na plataforma Quartus. O projeto contempla os módulos que compõem o caminho de
 dados (\textit{datapath}), as memórias de instrução e de dados em organização Harvard, a unidade de
 controle principal e a unidade de controle da ULA, de forma a executar automaticamente um conjunto de
-instruções de 32 bits pré-compiladas no formato MIF. Além do conjunto básico de referência
+instruções de 32 bits pré-compiladas no formato MIF. Além do conjunto básico de referência da literatura
 (Tipo-R, \texttt{lw}, \texttt{sw} e \texttt{beq}), foram implementadas as instruções de salto e de
 formação de constantes (\texttt{jal}, \texttt{jalr}, \texttt{lui} e \texttt{auipc}), o que exigiu a
 extensão do caminho de dados clássico com novos sinais de controle e novos multiplexadores. O trabalho
 inclui a descrição da arquitetura desenvolvida, do conjunto de instruções suportado, dos procedimentos e
-métodos adotados, dos resultados obtidos por meio do ambiente de simulação Waveform Editor e da análise
-de desempenho das unidades funcionais, seguidos de uma análise crítica dos resultados e das principais
+métodos adotados, dos resultados obtidos por meio do ambiente de simulação da forma de onda, seguidos de uma análise 
+crítica dos resultados e das principais
 dificuldades de implementação e depuração enfrentadas, em especial nas instruções de salto e no
 tratamento de endereços fora da região válida da memória de instruções.
 \end{abstract}
 
 \begin{IEEEkeywords}
-RISC-V, Uniciclo, FPGA, Quartus, caminho de dados, unidade de controle, multiplexador, saltos, jal, jalr
+RISC-V, Uniciclo, FPGA, Quartus, caminho de dados, unidade de controle
 \end{IEEEkeywords}
 
 %-----------------------------------------------------------------------
@@ -102,57 +102,50 @@ críticos, dificuldades de implementação e depuração, e conclusão geral do 
 O objetivo deste laboratório foi desenvolver a Unidade Operativa Uniciclo da arquitetura RISC-V32I,
 utilizando o ambiente Quartus II Altera, de forma a montar os módulos principais do caminho de dados
 (\textit{datapath}) capazes de processar instruções de 32 bits pré-compiladas no formato MIF, fazendo uso
-de memórias de instrução e de dados em organização Harvard. Além disso, o trabalho buscou reforçar os
-conceitos estudados na disciplina de Organização e Arquitetura de Computadores, proporcionando uma
-compreensão mais prática sobre o funcionamento do caminho de dados, da unidade de controle e da análise de
-desempenho de um processador Uniciclo. De forma específica, buscou-se estender o modelo de referência
-apresentado em sala \cite{patterson2020computer} para dar suporte às instruções de salto incondicional
+de memórias de instrução e de dados em organização Harvard. De forma específica, buscou-se estender o
+ modelo de referência
+apresentado na literatura \cite{patterson2020computer} para dar suporte às instruções de salto incondicional
 (\texttt{jal}, \texttt{jalr}) e às instruções de formação de constantes (\texttt{lui}, \texttt{auipc}),
-exercitando a inclusão de novos sinais de controle e novos caminhos de dados na microarquitetura.
+implementando a inclusão de novos sinais de controle e novos caminhos de dados na microarquitetura.
 
 \section{Introdução}
 
 \subsection{Arquitetura RISC-V32I Uniciclo}
 A arquitetura RISC-V32I segue a filosofia RISC (\textit{Reduced Instruction Set Computer}), caracterizada
-por um conjunto reduzido e regular de instruções de tamanho fixo (32 bits), poucos formatos de codificação
-e um modelo \textit{load--store}, no qual apenas as instruções de carga e armazenamento acessam a memória
-de dados, enquanto as demais operam exclusivamente sobre o banco de registradores
-\cite{patterson2020computer, referenceGuide}. A regularidade desse conjunto facilita a decodificação e o
-projeto do caminho de dados, pois os campos da instrução (opcode, \textit{funct3}, \textit{funct7},
+por um conjunto reduzido e regular de instruções de tamanho fixo (32 bits), esse conjunto facilita 
+a decodificação e o projeto do caminho de dados, pois os campos da instrução 
+(opcode, \textit{funct3}, \textit{funct7},
 registradores e imediato) ocupam posições previsíveis em cada formato.
 
 Na organização Uniciclo, toda instrução é integralmente buscada, decodificada e executada dentro de um
 único ciclo de \textit{clock}. Não há sobreposição entre estágios, de modo que o período do \textit{clock}
-deve ser dimensionado para acomodar o pior caminho crítico — tipicamente o caminho da instrução de carga
-(\texttt{lw}), que percorre memória de instruções, banco de registradores, ULA e memória de dados antes da
-escrita de volta \cite{patterson2020computer}. Como consequência, a simplicidade de controle do modelo
-Uniciclo é obtida ao custo de um período de \textit{clock} ditado pela instrução mais lenta.
+é dimensionado para acomodar o pior caminho crítico, o caminho da instrução de carga
+(\texttt{lw}), que percorre memória de instruções, banco de registradores, ULA e memória de dados e
+escrita no banco de registradores, \cite{patterson2020computer}. Como consequência, a simplicidade 
+de controle do modelo Uniciclo é obtida ao custo de um período de \textit{clock} 
+ditado pela instrução mais lenta.
 
 O projeto adota organização de memória do tipo Harvard, com memória de instruções e memória de dados
 fisicamente separadas, cada uma com seu próprio barramento de endereços e de dados. Essa separação permite
 que a busca da instrução e o eventual acesso ao dado ocorram no mesmo ciclo, sem conflito de acesso a uma
-única memória. O caminho de dados é composto pelo contador de programa (PC), pela memória de instruções,
-pelo banco de registradores, pelo gerador de imediato, pela Unidade Lógica e Aritmética (ULA) com sua
-unidade de controle, pelos somadores de cálculo de endereço, pela memória de dados e por um conjunto de
-multiplexadores que roteiam os dados conforme os sinais produzidos pela unidade de controle principal.
+única memória. Os componentes que compoem o caminho de dados são implementados em modulos segregados com
+entradas e saídas bem definidas, os quais são posteriormente ligados para implementar o processador final.
 
 \subsection{Contador de Programa e Memória de Instruções}
 O contador de programa (PC) é um registrador de 32 bits que armazena o endereço da instrução em execução.
-Trata-se do único elemento de estado do estágio de busca: a cada borda de subida do \textit{clock}, o PC é
-atualizado com o endereço da próxima instrução, calculado de forma combinacional pelo restante do caminho
-de dados. O módulo possui ainda uma entrada de \textit{reset} assíncrono que, quando ativada, inicializa o
-PC com o endereço base do segmento de texto, \texttt{0x00004000}, alinhado ao mapa de memória do RISC-V32I
-adotado pelo simulador RARS, conforme recomendado na especificação do trabalho.
+Trata-se do único elemento de entrada da memória de instruções. A cada borda de subida do \textit{clock}, 
+o PC é atualizado com o endereço da próxima instrução, calculado de forma combinacional 
+pelo restante do caminho de dados. O módulo possui ainda uma entrada de \textit{reset} 
+assíncrono que, quando ativada, inicializa o PC com o endereço base, \texttt{0x00004000}.
 
-A memória de instruções é descrita como uma memória somente de leitura no fluxo de execução, inicializada a
-partir do arquivo \texttt{UnicicloInst.mif}. Como o PC trabalha com endereços de \textit{byte} a partir de
+A memória de instruções é somente de leitura e é inicializada pelo conteúdo do arquivo \texttt{UnicicloInst.mif}. 
+Como o PC trabalha com endereços de \textit{byte} a partir de
 \texttt{0x00004000}, e a memória é organizada em palavras de 32 bits, é necessário traduzir o endereço
 recebido em um índice de palavra: subtrai-se o endereço base (\texttt{TEXT\_BASE}) do endereço corrente e
-divide-se o resultado por quatro (deslocamento de dois bits à direita). Além disso, a memória verifica se o
-endereço solicitado pertence à faixa válida do segmento de texto; caso contrário, retorna uma instrução
-sentinela definida, evitando que a leitura de uma posição não inicializada propague valores indefinidos
-para o restante do caminho de dados. Esse mecanismo de validação é discutido em detalhe na
-Seção~\ref{sec:dificuldades}.
+divide-se o resultado por quatro, deslocando dois bits a direita. Além disso, para impedir 
+acesso a endereços indevidos a memória verifica se o endereço solicitado pertence 
+à faixa válida do segmento de texto. 
+Esse mecanismo de validação é discutido em detalhe na Seção~\ref{sec:dificuldades}.
 
 \subsection{Banco de Registradores}
 O banco de registradores implementa os 32 registradores de 32 bits do RISC-V32I (\texttt{x0} a

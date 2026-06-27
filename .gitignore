@@ -12,3 +12,5 @@ greybox_tmp/
 
 # Testbenches
 *_tb.v
+
+.claude

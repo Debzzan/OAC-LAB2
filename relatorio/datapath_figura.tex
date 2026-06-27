@@ -1,0 +1,160 @@
+% =====================================================================
+%  Figura do caminho de dados Uniciclo RISC-V32I (conforme riscv_cpu.v).
+%  USO no main.tex:
+%    1) No preambulo adicione:
+%         \usepackage{tikz}
+%         \usetikzlibrary{positioning,calc,arrows.meta,backgrounds}
+%    2) Onde quiser a figura (ela ocupa as 2 colunas):
+%         \input{datapath_figura}
+% =====================================================================
+
+% ---- macros do desenho (globais; usadas dentro do float) ------------
+\tikzset{
+  dp/blk/.style ={draw,rounded corners=2pt,fill=blue!5,align=center,font=\small,line width=.5pt},
+  dp/mem/.style ={draw,fill=orange!12,align=center,font=\small,line width=.5pt},
+  dp/ctl/.style ={draw,rounded corners=6pt,fill=green!8,align=center,font=\footnotesize,line width=.5pt},
+  dp/wire/.style={-{Latex[length=2mm]},line width=.5pt},
+  dp/bus/.style ={-{Latex[length=2mm]},line width=1pt},
+  dp/ctrl/.style={-{Latex[length=1.6mm]},densely dashed,red!75!black,line width=.6pt},
+  dp/lbl/.style ={font=\scriptsize,inner sep=1pt},
+  dp/clbl/.style={font=\scriptsize,inner sep=1pt,text=red!75!black},
+}
+\def\dpmux#1#2#3{%
+  \draw[fill=black!8,line width=.5pt]
+    (#2-0.26,#3+0.62) -- (#2+0.26,#3+0.34) -- (#2+0.26,#3-0.34) -- (#2-0.26,#3-0.62) -- cycle;
+  \coordinate (#1i0)  at (#2-0.26,#3+0.40);
+  \coordinate (#1i1)  at (#2-0.26,#3-0.40);
+  \coordinate (#1o)   at (#2+0.26,#3);
+  \coordinate (#1sel) at (#2,#3-0.48);
+  \node[dp/lbl] at (#2-0.12,#3+0.40){0};
+  \node[dp/lbl] at (#2-0.12,#3-0.40){1};}
+\def\dpadder#1#2#3{%
+  \draw[fill=blue!6,line width=.5pt] (#2,#3) circle(0.42);
+  \node at (#2,#3){$+$};
+  \coordinate (#1a) at (#2-0.40,#3+0.17);
+  \coordinate (#1b) at (#2-0.40,#3-0.17);
+  \coordinate (#1o) at (#2+0.42,#3);}
+\def\dpalu#1#2#3{%
+  \draw[fill=blue!6,line width=.5pt]
+    (#2-0.85,#3+0.95) -- (#2+0.85,#3+0.45) -- (#2+0.85,#3-0.45) -- (#2-0.85,#3-0.95)
+    -- (#2-0.85,#3-0.32) -- (#2-0.45,#3) -- (#2-0.85,#3+0.32) -- cycle;
+  \node[font=\small] at (#2+0.02,#3){ULA};
+  \coordinate (#1a) at (#2-0.85,#3+0.58);
+  \coordinate (#1b) at (#2-0.85,#3-0.58);
+  \coordinate (#1o) at (#2+0.85,#3-0.18);
+  \coordinate (#1z) at (#2+0.85,#3+0.05);}
+
+\begin{figure*}[!t]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[line width=.5pt]
+
+% ===================== BLOCOS =======================================
+\node[dp/blk,minimum width=0.8cm,minimum height=1.3cm] (pc)  at (0,0)      {PC};
+\node[dp/mem,minimum width=1.5cm,minimum height=1.7cm] (im)  at (2.7,0)    {Mem.\\Instr.};
+\node[dp/blk,minimum width=2.0cm,minimum height=2.9cm] (reg) at (6.6,0)    {Banco de\\Registr.};
+\node[dp/blk,minimum width=2.0cm,minimum height=0.9cm] (imm) at (6.6,-2.7) {Gerador\\Imediato};
+\dpalu{alu}{11.4}{-0.2}
+\node[dp/mem,minimum width=1.7cm,minimum height=2.0cm] (dm)  at (14.3,-0.2){Mem.\\Dados};
+
+\dpmux{mxa}{9.6}{0.8}     % PCtoALU -> operando A
+\dpmux{mxb}{9.6}{-1.1}    % ALUSrc  -> operando B
+\dpmux{mw0}{16.5}{-0.2}   % MemtoReg[0]
+\dpmux{mw1}{17.9}{0.5}    % MemtoReg[1]
+
+\dpadder{a4}{2.7}{3.1}    % PC+4
+\dpadder{abr}{9.6}{3.3}   % PC+imediato
+\dpmux{mp0}{15.2}{4.3}    % PcSrc|Jump
+\dpmux{mp1}{17.0}{4.3}    % JumpR
+
+\node[dp/ctl,minimum width=2.4cm,minimum height=0.9cm] (cu) at (6.6,5.2){Unidade de\\Controle};
+\node[dp/ctl] (bc) at (13.6,1.4){Branch\\Control};
+\node[dp/ctl] (ac) at (11.4,-2.8){ALU\\Control};
+
+% ===================== BUSCA ========================================
+\draw[dp/bus] (pc.east) -- (im.west);
+\draw[line width=1pt] (1.2,0) -- (1.2,2.6) -- (9.2,2.6);
+\fill (1.2,0) circle(1.2pt);
+\draw[dp/wire] (2.3,2.6) -- (a4a);
+\draw[dp/wire] (9.2,2.6) -- (abra);
+\draw[dp/wire] (8.2,2.6) -- (8.2,0.4) -- (mxai1);
+\fill (8.2,2.6) circle(1.2pt); \fill (2.3,2.6) circle(1.2pt);
+\node[dp/lbl] at (0.85,1.3){pc\_atual};
+\node[dp/lbl,left=0pt of a4b]{4};
+\draw[dp/wire] ($(a4b)+(-0.45,0)$) -- (a4b);
+
+\draw[dp/bus] (im.east) -- (4.7,0);
+\fill (4.7,0) circle(1.2pt);
+\node[dp/lbl] at (3.95,0.55){instru\c{c}\~ao};
+\draw[dp/wire] (4.7,0) -- (reg.west);
+\node[dp/lbl,align=left] at (5.6,1.0){[19:15]\,rs1\\ {[24:20]}\,rs2\\ {[11:7]}\,rd};
+\draw[dp/wire] (4.7,0) |- (imm.west);
+\draw[dp/wire] (4.7,0) -- (4.7,5.2) -- (cu.west);
+\node[dp/lbl] at (4.25,4.85){[6:0]};
+
+% ===================== REG / IMM / ULA ==============================
+\draw[dp/wire] (reg.east) -- (8.9,0.0) |- (mxai0);
+\draw[dp/wire] ($(reg.east)+(0,-0.5)$) -- (8.4,-0.5) |- (mxbi0);
+\fill (8.4,-0.5) circle(1.2pt);
+\draw[dp/wire] (8.4,-0.5) -- (8.4,-2.05) -- (14.3,-2.05) -- (dm.south);
+\node[dp/lbl] at (11.3,-1.85){write data (rs2)};
+
+\draw[dp/wire] (imm.east) -- (8.85,-2.7);
+\fill (8.85,-2.7) circle(1.2pt);
+\draw[dp/wire] (8.85,-2.7) |- (mxbi1);
+\draw[line width=1pt] (8.85,-2.7) -- (8.85,3.13);
+\draw[dp/wire] (8.85,3.13) -- (abrb);
+
+\draw[dp/wire] (mxao) -- (alua);
+\draw[dp/wire] (mxbo) -- (alub);
+
+% ===================== ULA -> MEM / WB ==============================
+\draw[dp/wire] (aluo) -- (dm.west);
+\fill (aluo) circle(1.2pt);
+\draw[dp/wire] (aluo) -- (12.25,-1.5) -- (15.95,-1.5) -- (15.95,0.2) -- (mw0i0);
+\draw[dp/wire] (aluz) -- (12.7,0.0) -- (12.7,1.4) -- (bc.west);
+\draw[dp/wire] (dm.east) -- (15.75,-0.2) |- (mw0i1);
+\draw[dp/wire] (mw0o) -- (17.25,-0.2) |- (mw1i0);
+\draw[dp/wire] (mw1o) -- (18.55,0.5) -- (18.55,-4.4) -- (6.6,-4.4) -- (reg.south);
+\node[dp/lbl] at (12.0,-4.6){dado escrito no registrador (rd)};
+
+% ===================== PROXIMO PC ===================================
+\draw[dp/wire] (a4o) -- (3.5,3.1) -- (3.5,4.7) -- (mp0i0);
+\fill (3.5,4.7) circle(1.2pt);
+\draw[dp/wire] (3.5,4.7) -- (3.5,5.9) -- (17.64,5.9) -- (mw1i1);
+\node[dp/lbl] at (10.2,6.1){PC + 4};
+\node[dp/lbl] at (8.6,4.9){PC + 4};
+
+\draw[dp/wire] (abro) -| (mp0i1);
+\draw[dp/wire] (mp0o) |- (mp1i0);
+\draw[dp/wire] (aluo) -- (12.45,-0.38) -- (12.45,2.7) -- (16.74,2.7) -- (mp1i1);
+\node[dp/lbl,align=center] at (14.2,2.9){\{ULA[31:1],0\}};
+\draw[dp/wire] (mp1o) -- (18.9,4.3) -- (18.9,6.6) -- (-0.7,6.6) -- (-0.7,0) -- (pc.west);
+\node[dp/lbl] at (0.3,6.8){pr\'oximo PC};
+
+% ===================== CONTROLE (tracejado) =========================
+\draw[dp/ctrl] (cu.south) -- (reg.north);
+\node[dp/clbl] at (7.0,3.4){RegWrite};
+\draw[dp/ctrl] (mxbsel) -- (9.6,-1.95);  \node[dp/clbl] at (9.6,-2.15){ALUSrc};
+\draw[dp/ctrl] (mxasel) -- (9.6,0.08);   \node[dp/clbl,right] at (9.7,0.05){PCtoALU};
+\draw[dp/ctrl] (mw0sel) -- (16.5,-1.0);  \node[dp/clbl] at (16.5,-1.2){M2Reg[0]};
+\draw[dp/ctrl] (mw1sel) -- (17.9,-0.35); \node[dp/clbl] at (17.9,-0.55){M2Reg[1]};
+\draw[dp/ctrl] (bc.east) -- (15.2,1.4) -- (mp0sel);  \node[dp/clbl,align=center] at (16.0,3.0){PcSrc\\$|$\,Jump};
+\draw[dp/ctrl] (mp1sel) -- (17.0,3.55);  \node[dp/clbl] at (17.0,3.72){JumpR};
+\draw[dp/ctrl] (ac.north) -- (11.4,-1.15); \node[dp/clbl,right] at (11.5,-1.3){ALUOp};
+\draw[dp/ctrl] (13.6,2.2) -- (bc.north); \node[dp/clbl] at (13.6,2.35){Branch};
+\draw[dp/ctrl] (14.3,1.3) -- (dm.north); \node[dp/clbl,align=center] at (14.95,1.25){MemRead\\MemWrite};
+\node[dp/lbl,below=1pt of ac]{funct3, bit30};
+\node[dp/lbl] at (13.6,0.55){funct3};
+
+\node[dp/lbl,draw,rounded corners,fill=red!4] at (2.6,-3.7)
+  {\textcolor{red!75!black}{- - -} sinais da Unidade de Controle};
+
+\end{tikzpicture}}
+\caption{Caminho de dados da Unidade Operativa Uniciclo RISC-V32I implementada
+(\texttt{riscv\_cpu.v}). Em verde, as unidades de controle; tracejado vermelho, os
+sinais de controle. Os blocos adicionais ao modelo de refer\^encia (mux \texttt{PCtoALU},
+segundo n\'ivel de \emph{write-back} para \texttt{PC+4} e a cascata de pr\'oximo PC com
+o alvo de \texttt{jalr}) d\~ao suporte a \texttt{jal}, \texttt{jalr}, \texttt{lui} e \texttt{auipc}.}
+\label{fig:datapath}
+\end{figure*}
