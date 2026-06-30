@@ -15,6 +15,7 @@
 
 module control_unit (
     input  [6:0] opcode,       // opcode da instrução (bits 6 a 0)
+    input  [2:0] funct3,       // usado para validar instrucoes load/store/branch/jalr
 
     output reg        RegWrite, // habilita escrita no banco de registradores
     output reg        ALUSrc,   // 0 = usa rs2, 1 = usa imediato como 2º operando da ALU
@@ -25,7 +26,8 @@ module control_unit (
     output reg [2:0]  ALUOp,    // informa à ALU_CONTROL qual decodificação aplicar
     output reg        Jump,     // JAL  — salto incondicional relativo ao PC
     output reg        JumpR,    // JALR — salto para rs1 + imediato
-    output reg        PCtoALU   // AUIPC: usa o PC como primeiro operando da ALU
+    output reg        PCtoALU,  // AUIPC: usa o PC como primeiro operando da ALU
+    output reg        InstrucaoInvalida
 );
 
     always @(*) begin
@@ -40,6 +42,7 @@ module control_unit (
         Jump     = 1'b0;
         JumpR    = 1'b0;
         PCtoALU  = 1'b0;
+        InstrucaoInvalida = 1'b0;
 
         case (opcode)
             // Tipo-R: add, sub, and, or, xor, slt, sll, srl
@@ -63,28 +66,40 @@ module control_unit (
             // Load: lw, lhu (funct3 distingue na DATA_MEMORY)
             // Calcula endereço (rs1 + imm), lê memória, escreve dado em rd
             7'b0000011: begin
-                RegWrite = 1'b1;  // escreve dado lido em rd
-                ALUSrc   = 1'b1;  // endereço = rs1 + imediato
-                MemRead  = 1'b1;  // habilita leitura da memória
-                ALUOp    = 3'b000; // ALU faz soma para calcular endereço
-                MemtoReg = 2'b01; // dado vem da memória
+                if (funct3 == 3'b010) begin // LW
+                    RegWrite = 1'b1;  // escreve dado lido em rd
+                    ALUSrc   = 1'b1;  // endereço = rs1 + imediato
+                    MemRead  = 1'b1;  // habilita leitura da memória
+                    ALUOp    = 3'b000; // ALU faz soma para calcular endereço
+                    MemtoReg = 2'b01; // dado vem da memória
+                end else begin
+                    InstrucaoInvalida = 1'b1;
+                end
             end
 
             // Store: sw
             // Calcula endereço (rs1 + imm), escreve rs2 na memória
             7'b0100011: begin
-                ALUSrc   = 1'b1;  // endereço = rs1 + imediato
-                MemWrite = 1'b1;  // habilita escrita na memória
-                ALUOp    = 3'b000; // ALU faz soma para calcular endereço
-                // RegWrite = 0: não escreve em registrador
+                if (funct3 == 3'b010) begin // SW
+                    ALUSrc   = 1'b1;  // endereço = rs1 + imediato
+                    MemWrite = 1'b1;  // habilita escrita na memória
+                    ALUOp    = 3'b000; // ALU faz soma para calcular endereço
+                    // RegWrite = 0: não escreve em registrador
+                end else begin
+                    InstrucaoInvalida = 1'b1;
+                end
             end
 
             // Branch: beq, bne (funct3 trata a condição na lógica de desvio)
             // Compara rs1 e rs2; se condição verdadeira, PC = PC + imm
             7'b1100011: begin
-                ALUSrc   = 1'b0;  // segundo operando vem de rs2 (para comparação)
-                Branch   = 1'b1;  // sinaliza possível desvio
-                ALUOp    = 3'b001; // ALU faz subtração para comparar
+                if ((funct3 == 3'b000) || (funct3 == 3'b001)) begin // BEQ/BNE
+                    ALUSrc   = 1'b0;  // segundo operando vem de rs2 (para comparação)
+                    Branch   = 1'b1;  // sinaliza possível desvio
+                    ALUOp    = 3'b001; // ALU faz subtração para comparar
+                end else begin
+                    InstrucaoInvalida = 1'b1;
+                end
             end
 
             // JAL: rd = PC+4, PC = PC + imm (salto incondicional relativo)
@@ -96,11 +111,15 @@ module control_unit (
 
             // JALR: rd = PC+4, PC = (rs1 + imm) & ~1 (salto incondicional absoluto)
             7'b1100111: begin
-                RegWrite = 1'b1;  // salva endereço de retorno (PC+4) em rd
-                ALUSrc   = 1'b1;  // endereço alvo = rs1 + imediato
-                JumpR    = 1'b1;  // ativa salto JALR
-                ALUOp    = 3'b000; // ALU faz soma rs1 + imm
-                MemtoReg = 2'b10; // valor escrito em rd é PC+4
+                if (funct3 == 3'b000) begin
+                    RegWrite = 1'b1;  // salva endereço de retorno (PC+4) em rd
+                    ALUSrc   = 1'b1;  // endereço alvo = rs1 + imediato
+                    JumpR    = 1'b1;  // ativa salto JALR
+                    ALUOp    = 3'b000; // ALU faz soma rs1 + imm
+                    MemtoReg = 2'b10; // valor escrito em rd é PC+4
+                end else begin
+                    InstrucaoInvalida = 1'b1;
+                end
             end
 
             // LUI: rd = {imm[31:12], 12'b0} (carrega imediato nos bits altos)
@@ -132,6 +151,7 @@ module control_unit (
                 Jump     = 1'b0;
                 JumpR    = 1'b0;
                 PCtoALU  = 1'b0;
+                InstrucaoInvalida = 1'b1;
             end
         endcase
     end

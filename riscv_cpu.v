@@ -67,10 +67,12 @@ module riscv_cpu (
     wire zero;
     wire pc_src;
     wire jump, jump_r, pc_to_alu;
+    wire controle_instrucao_invalida, alu_instrucao_invalida, instrucao_invalida;
 
-    assign mem_read  = mem_read_ctrl;
-    assign mem_write = mem_write_ctrl;
-    assign reg_write = reg_write_ctrl;
+    assign instrucao_invalida = controle_instrucao_invalida | alu_instrucao_invalida;
+    assign mem_read  = mem_read_ctrl & ~instrucao_invalida;
+    assign mem_write = mem_write_ctrl & ~instrucao_invalida;
+    assign reg_write = reg_write_ctrl & ~instrucao_invalida;
 
     // -------------------------------------------------------------------------
     // Sinais de Debug para forçar a visualização no Waveform Editor
@@ -126,6 +128,7 @@ module riscv_cpu (
     // -------------------------------------------------------------------------
     control_unit controle_principal (
         .opcode(instrucao[6:0]),
+        .funct3(instrucao[14:12]),
         // Saídas
         .Branch(branch),
         .MemRead(mem_read_ctrl),
@@ -136,7 +139,8 @@ module riscv_cpu (
         .RegWrite(reg_write_ctrl),
         .Jump(jump),
         .JumpR(jump_r),
-        .PCtoALU(pc_to_alu)
+        .PCtoALU(pc_to_alu),
+        .InstrucaoInvalida(controle_instrucao_invalida)
     );
 
     // -------------------------------------------------------------------------
@@ -219,7 +223,8 @@ module riscv_cpu (
         .alu_op(alu_op[ 2 : 0 ]),      
         .funct3(instrucao[ 14 : 12 ]),
         .bit30(instrucao[ 30 ]), // <-- Trinta com espaço para não sumir
-        .alu_ctrl_out(controle_alu_fio)
+        .alu_ctrl_out(controle_alu_fio),
+        .InstrucaoInvalida(alu_instrucao_invalida)
     );
 
     // -------------------------------------------------------------------------
@@ -298,6 +303,6 @@ module riscv_cpu (
         .out(pc_destino)
     );
 
-    assign pc_proximo = pc_destino;
+    assign pc_proximo = instrucao_invalida ? pc_atual : pc_destino;
 
 endmodule
