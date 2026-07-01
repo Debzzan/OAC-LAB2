@@ -57,6 +57,7 @@ module riscv_cpu (
     wire [31:0] operando_a_alu, operando_b_alu, resultado_alu;
     wire [31:0] dado_lido_mem;
     wire [3:0]  controle_alu_fio;
+    wire        halt; 
     
     // Fios de Controle gerados pela control_unit
     wire branch, alu_src;
@@ -90,6 +91,7 @@ module riscv_cpu (
     pc pc_inst (
         .clk(clk),
         .reset(reset),
+        .halt(halt),
         .next_addr(pc_proximo),
         .current_addr(pc_atual)
     );
@@ -219,7 +221,8 @@ module riscv_cpu (
         .alu_op(alu_op[ 2 : 0 ]),      
         .funct3(instrucao[ 14 : 12 ]),
         .bit30(instrucao[ 30 ]), // <-- Trinta com espaço para não sumir
-        .alu_ctrl_out(controle_alu_fio)
+        .alu_ctrl_out(controle_alu_fio),
+        .illegal(halt)
     );
 
     // -------------------------------------------------------------------------

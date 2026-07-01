@@ -1,13 +1,8 @@
-// imm_gen - Gerador de Imediato 
-// ----------------------------------------------------------------------------
-// Recebe a instrucao de 32 bits (InstrOut) e produz o imediato de 32 bits
-// (ImmOut) com extensao de sinal, montando os campos conforme o formato da
-// instrucao (identificado pelo opcode em InstrOut[6:0]).
-//
-// Formatos suportados: I, S, B, U e J.
+// Gerador de imediato. Monta o imediato de 32 bits com extensao de sinal
+// conforme o formato da instrucao (I, S, B, U, J), identificado pelo opcode.
 module imm_gen (
-    input  [31:0] InstrOut,   // instrucao
-    output reg [31:0] ImmOut  // saida com sinal e considerando o bit shift do branch
+    input  [31:0] InstrOut,
+    output reg [31:0] ImmOut
 );
 
     wire [6:0] opcode = InstrOut[6:0];

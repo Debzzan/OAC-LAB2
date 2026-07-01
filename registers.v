@@ -81,11 +81,7 @@ module REGISTERS (
     (* keep = "true", preserve = "true" *) reg [31:0] debug_x30;
     (* keep = "true", preserve = "true" *) reg [31:0] debug_x31;
 
-    // -------------------------------------------------------------------------
-    // LEITURA ASSÍNCRONA (Combinacional)
-    // O valor sai no exato instante em que o endereço chega na porta!
-    // Se o endereço for 0 (x0), a saída é forçada para 0, conforme o padrão RISC-V.
-    // -------------------------------------------------------------------------
+    // Leitura assíncrona. x0 sempre lê 0 (padrão RISC-V).
     assign readData_1 = (ReadReg1 == 5'd0) ? 32'd0 : registradores[ReadReg1];
     assign readData_2 = (ReadReg2 == 5'd0) ? 32'd0 : registradores[ReadReg2];
 
@@ -157,18 +153,15 @@ module REGISTERS (
     assign out_t5   = debug_x30;  // x30
     assign out_t6   = debug_x31;  // x31
 
-    // -------------------------------------------------------------------------
-    // ESCRITA SÍNCRONA (Sequencial)
-    // A gravação só ocorre quando o clock vira (borda de subida).
-    // -------------------------------------------------------------------------
+    // Escrita síncrona na borda de subida.
     always @(posedge clk or posedge reset) begin
         if (reset) begin
-            // Zera todos os registradores quando o botão de reset for apertado
+            // Zera todos os registradores
             for (i = 0; i < 32; i = i + 1) begin
                 registradores[i] <= 32'd0;
             end
         end else begin
-            // Só grava se o sinal de controle permitir e se NÃO for o registrador x0!
+            // Não escreve em x0
             if (RegWrite && (WriteReg != 5'd0)) begin
                 registradores[WriteReg] <= WriteData;
             end
